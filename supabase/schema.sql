@@ -25,7 +25,7 @@ create table restaurants (
 -- 3. Tabel Hygiene Reports (Flag Kebersihan)
 create table hygiene_reports (
   id uuid default uuid_generate_v4() primary key,
-  user_id uuid references users(id) not null,
+  user_id uuid references users(id),
   restaurant_id uuid references restaurants(id) not null,
   report_type text not null, -- 'RED_FLAG' atau 'CLEAN'
   description text, -- "Banyak lalat di etalase"
