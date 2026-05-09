@@ -1,21 +1,17 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Poppins } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Setup Font Poppins agar tampilannya modern seperti prototipe
+const poppins = Poppins({
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-poppins",
 });
 
 export const metadata: Metadata = {
-  title: "Gacha Makan",
-  description:
-    "Helps university students choose where to eat by budget, distance, and hygiene.",
+  title: "Gacha Makan - Jatinangor",
+  description: "Solusi decision fatigue buat mahasiswa laper",
 };
 
 export default function RootLayout({
@@ -24,11 +20,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="id">
+      <head>
+        {/* Link Font Awesome supaya icon <i className="fa-solid ..."> muncul */}
+        <link 
+          rel="stylesheet" 
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" 
+        />
+      </head>
+      <body className={`${poppins.variable} font-sans antialiased bg-slate-200`}>
+        {children}
+      </body>
     </html>
   );
 }
