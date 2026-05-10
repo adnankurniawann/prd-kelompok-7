@@ -4,7 +4,6 @@
  */
 
 import { supabase } from "@/lib/supabase/client";
-import { haversineDistance } from "@/utils/geo";
 
 // Re-export supabase so other modules in this layer can use it without
 // importing client.ts directly (keeps the import graph clean).
@@ -34,6 +33,15 @@ export interface RestaurantWithDistance {
   price_tier: number;
   hygiene_score: number;
   distance: number; // integer meters, rounded
+}
+
+interface EligibleRestaurantRecord {
+  id: string;
+  name: string;
+  category: string | null;
+  price_tier: number;
+  hygiene_score: number;
+  distance: number;
 }
 
 /** Restaurant with parsed coordinates and hygiene status (for /api/restaurants map). */
@@ -201,11 +209,10 @@ export async function getAllRestaurants(): Promise<RestaurantWithCoords[]> {
  * Returns restaurants eligible for the gacha spin, filtered by:
  *   - hygiene_score >= 50 (absolute safety filter)
  *   - price_tier <= budget
- *   - distance from user location <= radiusMeters (computed via haversine in JS)
+ *   - distance from user location <= radiusMeters (computed in PostGIS)
  *
- * The `location` PostGIS column is fetched and parsed to extract lat/lng for
- * the distance calculation, since the Supabase JS client does not support
- * PostGIS spatial functions (e.g. ST_DistanceSphere) in `.filter()` calls.
+ * The query is delegated to a Supabase SQL function so the distance filter is
+ * executed with `ST_DistanceSphere` inside PostgreSQL.
  *
  * @param budget       - Maximum price tier in Rupiah (inclusive)
  * @param radiusMeters - Maximum distance from user in meters (inclusive)
@@ -222,60 +229,29 @@ export async function getEligibleRestaurants(
   userLat: number,
   userLng: number
 ): Promise<RestaurantWithDistance[]> {
-  // Apply DB-level filters for hygiene and budget; fetch location for JS-side
-  // distance filtering (PostGIS ST_DistanceSphere not available via JS client).
-  const { data, error } = await supabase
-    .from("restaurants")
-    .select("id, name, category, price_tier, hygiene_score, location")
-    .gte("hygiene_score", 50)
-    .lte("price_tier", budget);
+  const { data, error } = await supabase.rpc("get_eligible_restaurants", {
+    budget,
+    radius_meters: radiusMeters,
+    user_lat: userLat,
+    user_lng: userLng,
+  });
 
   if (error) {
     throw new Error(
-      `getEligibleRestaurants: Supabase query failed — ${error.message}`
+      `getEligibleRestaurants: Supabase query failed — ${error.message} (code: ${error.code})`
     );
   }
 
-  const rows = (data ?? []) as Array<{
-    id: string;
-    name: string;
-    category: string | null;
-    price_tier: number;
-    hygiene_score: number;
-    location: unknown;
-  }>;
+  const rows = (data ?? []) as EligibleRestaurantRecord[];
 
-  const results: RestaurantWithDistance[] = [];
-
-  for (const row of rows) {
-    let coords: { lat: number; lng: number };
-    try {
-      coords = parsePostGISPoint(row.location);
-    } catch {
-      // Skip rows with unparseable location data rather than crashing the whole query.
-      continue;
-    }
-
-    const distanceMeters = haversineDistance(
-      userLat,
-      userLng,
-      coords.lat,
-      coords.lng
-    );
-
-    if (distanceMeters <= radiusMeters) {
-      results.push({
-        id: row.id,
-        name: row.name,
-        category: row.category,
-        price_tier: row.price_tier,
-        hygiene_score: row.hygiene_score,
-        distance: Math.round(distanceMeters),
-      });
-    }
-  }
-
-  return results;
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    category: row.category,
+    price_tier: row.price_tier,
+    hygiene_score: row.hygiene_score,
+    distance: Math.round(row.distance),
+  }));
 }
 
 /**

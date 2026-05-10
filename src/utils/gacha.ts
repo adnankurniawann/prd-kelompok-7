@@ -4,6 +4,19 @@
  */
 
 /**
+ * Calculates spin weights from candidate items and the user's budget.
+ *
+ * The weight is `max(1, budget - price_tier)` so every candidate keeps a
+ * minimum chance while cheaper items still get a larger share.
+ */
+export function calculateSpinWeights<T extends { price_tier: number }>(
+  items: T[],
+  budget: number
+): number[] {
+  return items.map((item) => Math.max(1, budget - item.price_tier));
+}
+
+/**
  * Selects one item from `items` using weighted random selection.
  *
  * @param items   Non-empty array of items to select from.

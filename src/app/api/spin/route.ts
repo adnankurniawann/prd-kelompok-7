@@ -9,7 +9,7 @@
  */
 
 import { getEligibleRestaurants } from "@/lib/supabase/queries";
-import { weightedRandom } from "@/utils/gacha";
+import { calculateSpinWeights, weightedRandom } from "@/utils/gacha";
 
 // ---------------------------------------------------------------------------
 // Input validation helpers
@@ -178,9 +178,7 @@ export async function POST(request: Request): Promise<Response> {
     // ------------------------------------------------------------------
     // 6. Calculate weights: max(1, budget - price_tier)
     // ------------------------------------------------------------------
-    const weights = candidates.map((r) =>
-      Math.max(1, budgetNum - r.price_tier)
-    );
+    const weights = calculateSpinWeights(candidates, budgetNum);
 
     // ------------------------------------------------------------------
     // 7. Weighted random selection

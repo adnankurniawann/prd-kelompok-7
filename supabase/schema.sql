@@ -1,5 +1,6 @@
 -- Aktifkan ekstensi PostGIS untuk query jarak
 create extension if not exists postgis;
+create extension if not exists "uuid-ossp";
 
 -- 1. Tabel Users
 create table users (
@@ -21,6 +22,46 @@ create table restaurants (
   is_verified_safe boolean default false,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- 2a. Fungsi helper untuk candidate spin berbasis PostGIS
+create or replace function get_eligible_restaurants(
+  budget integer,
+  radius_meters integer,
+  user_lat double precision,
+  user_lng double precision
+)
+returns table (
+  id uuid,
+  name text,
+  category text,
+  price_tier int,
+  hygiene_score int,
+  distance int
+)
+language sql
+stable
+as $$
+  select
+    r.id,
+    r.name,
+    r.category,
+    r.price_tier,
+    r.hygiene_score,
+    round(
+      st_distance_sphere(
+        r.location,
+        st_setsrid(st_makepoint(user_lng, user_lat), 4326)::geography
+      )
+    )::int as distance
+  from restaurants r
+  where r.hygiene_score >= 50
+    and r.price_tier <= budget
+    and st_distance_sphere(
+      r.location,
+      st_setsrid(st_makepoint(user_lng, user_lat), 4326)::geography
+    ) <= radius_meters
+  order by distance asc, price_tier asc, hygiene_score desc, name asc;
+$$;
 
 -- 3. Tabel Hygiene Reports (Flag Kebersihan)
 create table hygiene_reports (
