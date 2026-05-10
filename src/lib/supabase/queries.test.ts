@@ -12,7 +12,35 @@ vi.mock("@/lib/supabase/client", () => ({
   },
 }));
 
-import { getEligibleRestaurants } from "@/lib/supabase/queries";
+import {
+  formatToPostGISPoint,
+  getAllRestaurants,
+  getEligibleRestaurants,
+  parsePostGISPoint,
+  saveHygieneReport,
+  updateHygieneScore,
+} from "@/lib/supabase/queries";
+
+describe("PostGIS helpers", () => {
+  it("formats a WKT point using longitude-first order", () => {
+    expect(formatToPostGISPoint(-6.92, 107.77)).toBe("POINT(107.77 -6.92)");
+  });
+
+  it("rejects coordinates outside valid ranges", () => {
+    expect(() => formatToPostGISPoint(91, 107.77)).toThrow(RangeError);
+    expect(() => formatToPostGISPoint(-6.92, 181)).toThrow(RangeError);
+  });
+
+  it("parses GeoJSON and WKT geography values", () => {
+    expect(
+      parsePostGISPoint({ type: "Point", coordinates: [107.77, -6.92] })
+    ).toEqual({ lat: -6.92, lng: 107.77 });
+    expect(parsePostGISPoint("POINT(107.77 -6.92)")).toEqual({
+      lat: -6.92,
+      lng: 107.77,
+    });
+  });
+});
 
 describe("getEligibleRestaurants", () => {
   beforeEach(() => {
@@ -89,5 +117,109 @@ describe("getEligibleRestaurants", () => {
     ).rejects.toThrow(
       "getEligibleRestaurants: Supabase query failed — boom (code: PGRST500)"
     );
+  });
+});
+
+describe("getAllRestaurants", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("parses coordinates and derives hygiene status", async () => {
+    const selectMock = vi.fn().mockResolvedValue({
+      data: [
+        {
+          id: "11111111-1111-1111-1111-111111111111",
+          name: "Ayam Geprek",
+          category: "Ayam",
+          price_tier: 15000,
+          location: "POINT(107.77 -6.92)",
+          hygiene_score: 90,
+          is_verified_safe: true,
+          created_at: "2026-05-10T00:00:00Z",
+        },
+      ],
+      error: null,
+    });
+
+    fromMock.mockReturnValue({ select: selectMock });
+
+    await expect(getAllRestaurants()).resolves.toEqual([
+      {
+        id: "11111111-1111-1111-1111-111111111111",
+        name: "Ayam Geprek",
+        category: "Ayam",
+        price_tier: 15000,
+        hygiene_score: 90,
+        is_verified_safe: true,
+        lat: -6.92,
+        lng: 107.77,
+        hygiene_status: "GREEN",
+      },
+    ]);
+  });
+});
+
+describe("saveHygieneReport", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("inserts a guest report with a null user id", async () => {
+    const insertMock = vi.fn().mockResolvedValue({ error: null });
+    fromMock.mockReturnValue({ insert: insertMock });
+
+    await expect(
+      saveHygieneReport(
+        "11111111-1111-1111-1111-111111111111",
+        "RED_FLAG",
+        "Banyak lalat"
+      )
+    ).resolves.toBeUndefined();
+
+    expect(insertMock).toHaveBeenCalledWith({
+      user_id: null,
+      restaurant_id: "11111111-1111-1111-1111-111111111111",
+      report_type: "RED_FLAG",
+      description: "Banyak lalat",
+    });
+  });
+});
+
+describe("updateHygieneScore", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("reduces score and marks the restaurant unsafe for red flags", async () => {
+    const selectSingleMock = vi.fn().mockResolvedValue({
+      data: { hygiene_score: 90 },
+      error: null,
+    });
+    const selectEqMock = vi.fn().mockReturnValue({ single: selectSingleMock });
+    const selectMock = vi.fn().mockReturnValue({ eq: selectEqMock });
+
+    const updateSingleMock = vi.fn().mockResolvedValue({
+      data: {
+        id: "11111111-1111-1111-1111-111111111111",
+        name: "Ayam Geprek",
+        category: "Ayam",
+        price_tier: 15000,
+        location: "POINT(107.77 -6.92)",
+        hygiene_score: 40,
+        is_verified_safe: false,
+        created_at: "2026-05-10T00:00:00Z",
+      },
+      error: null,
+    });
+    const updateSelectMock = vi.fn().mockReturnValue({ single: updateSingleMock });
+    const updateEqMock = vi.fn().mockReturnValue({ select: updateSelectMock });
+    const updateMock = vi.fn().mockReturnValue({ eq: updateEqMock });
+
+    fromMock.mockReturnValue({ select: selectMock, update: updateMock });
+
+    await expect(
+      updateHygieneScore("11111111-1111-1111-1111-111111111111", "RED_FLAG")
+    ).resolves.toMatchObject({ hygiene_score: 40, is_verified_safe: false });
   });
 });

@@ -1,152 +1,161 @@
-'use client';
-
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import Link from "next/link";
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState('home');
-  const [isSpinning, setIsSpinning] = useState(false);
-  const [showResult, setShowResult] = useState(false);
-  const [result, setResult] = useState({ name: '', price: 0, dist: '' });
-  const [budget, setBudget] = useState(20000);
-
-  const dummyFoods = [
-    { name: "Nasi Goreng AA Ciseke", price: 15000, dist: "0.2 km" },
-    { name: "Ayam Geprek Pangeran", price: 18000, dist: "0.5 km" },
-    { name: "Sate Padang Sayang", price: 20000, dist: "1.2 km" },
-    { name: "Warteg Bahari", price: 12000, dist: "0.1 km" },
-  ];
-
-  const handleSpin = () => {
-    setIsSpinning(true);
-    const affordable = dummyFoods.filter(f => f.price <= budget);
-    const selected = affordable[Math.floor(Math.random() * affordable.length)] || dummyFoods[0];
-    
-    setTimeout(() => {
-      setIsSpinning(false);
-      setResult(selected);
-      setShowResult(true);
-    }, 2000);
-  };
-
   return (
-    <main className="max-w-[400px] mx-auto h-screen bg-slate-50 flex flex-col relative overflow-hidden border-x border-slate-200 shadow-xl">
-      {/* HEADER */}
-      <div className="px-6 pt-12 pb-4 flex justify-between items-center bg-white">
-        <div>
-          <p className="text-xs text-slate-500">Selamat Pagi,</p>
-          <h1 className="text-lg font-bold text-slate-900">Adnan (IF25)</h1>
-        </div>
-        <div className="w-10 h-10 rounded-full bg-slate-200 border-2 border-white shadow-sm overflow-hidden">
-          <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=Adnan`} alt="Avatar" />
-        </div>
-      </div>
+    <main
+      className="relative min-h-screen overflow-hidden text-slate-950"
+      style={{
+        backgroundImage:
+          "radial-gradient(circle at top, #fff7ed 0%, #f8fafc 34%, #eef2ff 100%)",
+      }}
+    >
+      <div className="absolute inset-x-0 top-0 h-72 bg-[linear-gradient(135deg,rgba(244,63,94,0.16),rgba(14,165,233,0.08),transparent)]" />
+      <div className="absolute left-8 top-24 h-44 w-44 rounded-full bg-rose-200/40 blur-3xl" />
+      <div className="absolute right-0 top-40 h-56 w-56 rounded-full bg-sky-200/40 blur-3xl" />
 
-      {/* CONTENT AREA */}
-      <div className="flex-1 overflow-y-auto pb-24">
-        {activeTab === 'home' && (
-          <div className="p-6 space-y-6">
-            {/* Wallet Card */}
-            <div className="bg-slate-900 rounded-2xl p-5 text-white shadow-lg">
-              <p className="text-xs text-slate-400 mb-1">Sisa Saldo Makan</p>
-              <h2 className="text-3xl font-bold mb-4">Rp 450.000</h2>
-              <div className="flex gap-2 text-[10px]">
-                <span className="bg-white/10 px-2 py-1 rounded-full">Hemat 15%</span>
-                <span className="bg-white/10 px-2 py-1 rounded-full">Cukup s.d. akhir bulan</span>
-              </div>
+      <div className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col px-5 py-6 sm:px-8 lg:px-10">
+        <header className="flex items-center justify-between rounded-4xl border border-white/70 bg-white/75 px-5 py-4 shadow-[0_20px_80px_rgba(15,23,42,0.08)] backdrop-blur">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-rose-500">
+              Gacha Makan
+            </p>
+            <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">
+              Pilih makan siang tanpa mikir lama.
+            </h1>
+          </div>
+          <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-slate-950 px-3 py-2 text-white shadow-lg shadow-slate-950/10">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white/20 bg-gradient-to-br from-rose-400 to-orange-300 text-sm font-black text-white">
+              A
             </div>
+            <div className="hidden sm:block">
+              <p className="text-[11px] uppercase tracking-[0.3em] text-slate-300">
+                Selamat datang
+              </p>
+              <p className="text-sm font-semibold">Adnan (IF25)</p>
+            </div>
+          </div>
+        </header>
 
-            <button 
-              onClick={() => setActiveTab('gacha')}
-              className="w-full bg-rose-500 text-white rounded-xl p-4 font-bold shadow-lg shadow-rose-500/30 flex items-center justify-center gap-3 active:scale-95 transition-all"
-            >
-              BINGUNG MAKAN APA? SPIN!
-            </button>
+        <section className="grid flex-1 gap-6 py-6 lg:grid-cols-[1.3fr_0.9fr]">
+          <div className="space-y-6">
+            <div className="overflow-hidden rounded-4xl border border-slate-200 bg-slate-950 text-white shadow-[0_24px_100px_rgba(15,23,42,0.24)]">
+              <div className="grid gap-6 p-6 sm:grid-cols-[1.2fr_0.8fr] sm:p-8">
+                <div className="space-y-4">
+                  <span className="inline-flex w-fit rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-rose-200">
+                    Live backend ready
+                  </span>
+                  <h2 className="text-4xl font-black leading-tight tracking-tight sm:text-5xl">
+                    Spin restoran dari data nyata, bukan dummy list.
+                  </h2>
+                  <p className="max-w-xl text-sm leading-6 text-slate-300 sm:text-base">
+                    Filter budget, radius, dan skor higienitas langsung lewat
+                    API. Hasil spin dan radar restoran dihubungkan ke seed data
+                    yang sudah dipakai oleh backend.
+                  </p>
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    <span className="rounded-full bg-white/10 px-3 py-1 text-slate-100">
+                      16 seed restoran
+                    </span>
+                    <span className="rounded-full bg-white/10 px-3 py-1 text-slate-100">
+                      PostGIS radius filter
+                    </span>
+                    <span className="rounded-full bg-white/10 px-3 py-1 text-slate-100">
+                      Hygiene score live
+                    </span>
+                  </div>
+                </div>
 
-            {/* Hygiene Alerts */}
-            <div>
-              <h3 className="font-bold text-slate-800 mb-3 text-sm italic">Radar Higienitas Jatinangor</h3>
-              <div className="bg-white p-4 rounded-xl border border-red-100 shadow-sm flex gap-3">
-                <div className="text-rose-500 mt-1">⚠️</div>
-                <div>
-                  <h4 className="font-bold text-xs">Warteg X, Ciseke</h4>
-                  <p className="text-[11px] text-slate-500">"Banyak lalat di etalase, ada laporan sakit perut."</p>
+                <div className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur">
+                  <p className="text-xs uppercase tracking-[0.28em] text-slate-400">
+                    Hari ini
+                  </p>
+                  <div className="mt-4 space-y-3">
+                    <div className="rounded-2xl bg-white/10 p-4">
+                      <p className="text-[11px] uppercase tracking-[0.25em] text-slate-400">
+                        Budget aman
+                      </p>
+                      <p className="mt-2 text-3xl font-black">Rp 20.000</p>
+                    </div>
+                    <div className="rounded-2xl bg-white/10 p-4">
+                      <p className="text-[11px] uppercase tracking-[0.25em] text-slate-400">
+                        Zona aktif
+                      </p>
+                      <p className="mt-2 text-lg font-semibold">Jatinangor & sekitarnya</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
 
-        {activeTab === 'gacha' && (
-          <div className="p-6 flex flex-col items-center h-full">
-             <h2 className="text-xl font-bold mb-8">Gacha Makan</h2>
-             
-             {/* Filter Simple */}
-             <div className="w-full bg-white p-4 rounded-xl shadow-sm mb-12">
-               <label className="block text-xs font-bold mb-2">Budget Maksimal: Rp {budget.toLocaleString()}</label>
-               <input 
-                type="range" min="10000" max="50000" step="5000" 
-                value={budget} onChange={(e) => setBudget(parseInt(e.target.value))}
-                className="w-full accent-rose-500"
-               />
-             </div>
-
-             {/* Spin Button with Framer Motion */}
-             <div className="relative mt-12">
-               <motion.button
-                animate={isSpinning ? { rotate: 360 } : { rotate: 0 }}
-                transition={isSpinning ? { repeat: Infinity, duration: 0.5, ease: "linear" } : {}}
-                onClick={handleSpin}
-                disabled={isSpinning}
-                className="w-40 h-40 rounded-full bg-rose-500 text-white font-black text-2xl border-4 border-white shadow-2xl z-10 relative"
-               >
-                 {isSpinning ? 'SPINNING' : 'SPIN!'}
-               </motion.button>
-               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full border-2 border-dashed border-rose-300 animate-spin" />
-             </div>
-          </div>
-        )}
-      </div>
-
-      {/* NAVIGATION BAR */}
-      <nav className="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 p-4 flex justify-around items-center">
-        <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center ${activeTab === 'home' ? 'text-rose-500' : 'text-slate-400'}`}>
-          <span className="text-[10px] font-bold">HOME</span>
-        </button>
-        <button onClick={() => setActiveTab('gacha')} className={`flex flex-col items-center ${activeTab === 'gacha' ? 'text-rose-500' : 'text-slate-400'}`}>
-          <div className="bg-rose-50 p-3 rounded-full -mt-8 border-4 border-slate-50 text-rose-500">
-             <span className="text-xs">SPIN</span>
-          </div>
-        </button>
-        <button onClick={() => setActiveTab('map')} className={`flex flex-col items-center ${activeTab === 'map' ? 'text-rose-500' : 'text-slate-400'}`}>
-          <span className="text-[10px] font-bold">MAP</span>
-        </button>
-      </nav>
-
-      {/* RESULT MODAL */}
-      <AnimatePresence>
-        {showResult && (
-          <motion.div 
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm z-[60] flex items-center justify-center p-6"
-          >
-            <motion.div 
-              initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }}
-              className="bg-white w-full p-6 rounded-3xl text-center"
-            >
-              <h3 className="text-2xl font-bold text-slate-900">{result.name}</h3>
-              <p className="text-rose-500 font-bold my-2">Rp {result.price.toLocaleString()}</p>
-              <p className="text-slate-500 text-sm mb-6">📍 Jarak: {result.dist}</p>
-              <button 
-                onClick={() => setShowResult(false)}
-                className="w-full bg-slate-900 text-white p-4 rounded-xl font-bold"
+            <div className="grid gap-4 md:grid-cols-2">
+              <Link
+                href="/spin"
+                className="group rounded-[1.75rem] border border-rose-200 bg-linear-to-br from-rose-500 to-orange-400 p-6 text-white shadow-[0_20px_80px_rgba(244,63,94,0.28)] transition-transform hover:-translate-y-1"
               >
-                GAS OTW!
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-100">
+                  Spin
+                </p>
+                <h3 className="mt-2 text-2xl font-black">Mulai gacha makan</h3>
+                <p className="mt-2 text-sm text-rose-50/90">
+                  Buka halaman spin untuk memilih budget, radius, dan lokasi lalu
+                  kirim ke endpoint /api/spin.
+                </p>
+              </Link>
+
+              <Link
+                href="/map"
+                className="group rounded-[1.75rem] border border-sky-200 bg-linear-to-br from-slate-950 to-sky-700 p-6 text-white shadow-[0_20px_80px_rgba(2,132,199,0.2)] transition-transform hover:-translate-y-1"
+              >
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-sky-200">
+                  Map
+                </p>
+                <h3 className="mt-2 text-2xl font-black">Lihat radar higienitas</h3>
+                <p className="mt-2 text-sm text-slate-200">
+                  Buka halaman map untuk melihat daftar restoran, status higienitas,
+                  dan kirim report RED_FLAG atau CLEAN.
+                </p>
+              </Link>
+            </div>
+          </div>
+
+          <aside className="space-y-4 rounded-4xl border border-slate-200 bg-white/80 p-5 shadow-[0_20px_80px_rgba(15,23,42,0.08)] backdrop-blur">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
+                Alur kerja
+              </p>
+              <h3 className="mt-2 text-2xl font-black tracking-tight">
+                Tiga langkah untuk beresin lapar.
+              </h3>
+            </div>
+
+            <div className="space-y-3">
+              {[
+                ["01", "Pilih budget & radius", "Gunakan lokasi sekarang atau isi manual."],
+                ["02", "Spin restoran", "Endpoint memilih kandidat yang lolos filter."],
+                ["03", "Cek radar & laporkan", "Map menampilkan status higienitas terbaru."],
+              ].map(([step, title, description]) => (
+                <div key={step} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-rose-500">
+                    {step}
+                  </p>
+                  <h4 className="mt-2 font-bold text-slate-900">{title}</h4>
+                  <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-3xl bg-slate-950 p-5 text-white">
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
+                Catatan
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-300">
+                UI ini sudah langsung menempel ke kontrak backend yang lolos
+                test: /api/spin, /api/restaurants, dan /api/report.
+              </p>
+            </div>
+          </aside>
+        </section>
+      </div>
     </main>
   );
 }

@@ -28,7 +28,7 @@ export default function RootLayout({
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" 
         />
       </head>
-      <body className={`${poppins.variable} font-sans antialiased bg-slate-200`}>
+      <body className={`${poppins.variable} min-h-screen antialiased`}>
         {children}
       </body>
     </html>

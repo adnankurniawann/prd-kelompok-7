@@ -14,7 +14,7 @@
 
 INSERT INTO restaurants (name, category, price_tier, location, hygiene_score, is_verified_safe)
 VALUES 
-  -- AREA CISEKE
+  -- AREA CISEKE (High-end, near main gate)
   (
     'Ayam Geprek Pangeran Ciseke', 
     'Ayam', 
@@ -29,7 +29,7 @@ VALUES
     15000, 
     ST_GeographyFromText('POINT(107.773850 -6.928500)'), 
     85, 
-    false
+    true
   ),
   (
     'Mie Gacoan Jatinangor', 
@@ -39,8 +39,16 @@ VALUES
     95, 
     true
   ),
+  (
+    'Soto Ayam Ciseke Premium',
+    'Sup',
+    18000,
+    ST_GeographyFromText('POINT(107.774100 -6.927200)'),
+    92,
+    true
+  ),
 
-  -- AREA SAYANG
+  -- AREA SAYANG (Mid-range, student-friendly)
   (
     'Ayam Serundeng SPG Sayang', 
     'Ayam', 
@@ -50,21 +58,89 @@ VALUES
     true
   ),
   (
-    'Warteg X (Contoh Red Flag)', 
+    'Nasi Kuning Sayang',
+    'Nasi',
+    12000,
+    ST_GeographyFromText('POINT(107.770800 -6.930300)'),
+    78,
+    true
+  ),
+  (
+    'Bakso Sayang Mantep',
+    'Bakso',
+    14000,
+    ST_GeographyFromText('POINT(107.770200 -6.929800)'),
+    88,
+    true
+  ),
+  (
+    'Warteg Sayang (Contoh Red Flag)', 
     'Warteg', 
     12000, 
-    ST_GeographyFromText('POINT(107.772000 -6.929500)'), 
-    40, -- Skor rendah untuk testing filter higienitas
+    ST_GeographyFromText('POINT(107.771000 -6.931000)'), 
+    40, 
     false
   ),
 
-  -- AREA HEGARMANAH / GKPN
+  -- AREA HEGARMANAH / GKPN (Budget-friendly)
   (
     'Kantin Jatinangor ITB', 
     'Campur', 
     15000, 
     ST_GeographyFromText('POINT(107.770000 -6.925000)'), 
     100, 
+    true
+  ),
+  (
+    'Nasi Goreng Hegarmanah',
+    'Nasi',
+    11000,
+    ST_GeographyFromText('POINT(107.769500 -6.924500)'),
+    70,
+    false
+  ),
+  (
+    'Sate Ayam Budget',
+    'Sate',
+    13000,
+    ST_GeographyFromText('POINT(107.769800 -6.924800)'),
+    75,
+    true
+  ),
+
+  -- AREA UJUNGBERUNG (Far, but good options)
+  (
+    'Ayam Bakar Ujung',
+    'Ayam',
+    22000,
+    ST_GeographyFromText('POINT(107.768000 -6.922000)'),
+    94,
+    true
+  ),
+  (
+    'Warung Apu Ujung',
+    'Warteg',
+    13000,
+    ST_GeographyFromText('POINT(107.767800 -6.921500)'),
+    65,
+    false
+  ),
+
+  -- AREA MARGAHAYU (Premium cluster)
+  (
+    'Steak House Margahayu',
+    'Steak',
+    25000,
+    ST_GeographyFromText('POINT(107.776000 -6.930500)'),
+    98,
+    true
+  ),
+  (
+    'Nasi Padang Margahayu',
+    'Padang',
+    16000,
+    ST_GeographyFromText('POINT(107.776500 -6.931000)'),
+    86,
     true
   );
 

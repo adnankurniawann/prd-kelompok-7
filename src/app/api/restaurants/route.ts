@@ -7,7 +7,7 @@
 
 import { getAllRestaurants } from "@/lib/supabase/queries";
 
-export async function GET(_request: Request): Promise<Response> {
+export async function GET(): Promise<Response> {
   try {
     const restaurants = await getAllRestaurants();
     return Response.json({ data: restaurants }, { status: 200 });

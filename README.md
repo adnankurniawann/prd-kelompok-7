@@ -53,6 +53,40 @@ cp .env.local.example .env.local
 ```bash
 npm run dev
 
+## Connect Supabase (Akun Kamu Sendiri)
+
+1. Buka Supabase Dashboard, pilih project kamu.
+2. Masuk ke Settings -> API.
+3. Copy 2 nilai ini:
+    - Project URL
+    - anon public key
+4. Di root project, buat file env lokal:
+
+```bash
+cp .env.local.example .env.local
+```
+
+5. Isi `.env.local`:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-public-key>
+```
+
+6. Jalankan SQL schema dan seed di Supabase SQL Editor:
+    - Jalankan `supabase/schema.sql`
+    - Jalankan `supabase/seed.sql`
+7. Restart dev server:
+
+```bash
+npm run dev
+```
+
+Catatan keamanan:
+- Jangan commit `.env.local`.
+- Jangan share service role key ke frontend.
+- Yang dipakai aplikasi ini hanya `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+
 ## Pembagian Tugas Dan Wilayah Kerja 
 Biar ga bingung dan ga ngerusak flow kerja, tolong ngoding hanya di folder wilayah kerja masing-masing. 
 
