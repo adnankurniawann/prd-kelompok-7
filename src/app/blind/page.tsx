@@ -113,7 +113,7 @@ export default function BlindPage() {
           "radial-gradient(circle at top, #1e1b4b 0%, #0f172a 42%, #020617 100%)",
       }}
     >
-      <div className="mx-auto flex min-h-screen w-full max-w-107.5 flex-col px-3 py-4 sm:px-4 sm:py-5">
+      <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-3 py-4 sm:px-6 sm:py-5 lg:px-8">
         <header className="flex flex-col gap-3 rounded-3xl border border-white/10 bg-white/5 px-4 py-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.32em] text-indigo-200">

@@ -127,7 +127,7 @@ export default function SpinPage() {
           "radial-gradient(circle at top, #fff1f2 0%, #fff7ed 32%, #f8fafc 100%)",
       }}
     >
-      <div className="mx-auto flex min-h-screen w-full max-w-107.5 flex-col px-3 py-4 sm:px-4 sm:py-5">
+      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-3 py-4 sm:px-8 sm:py-6 lg:px-10">
         <header className="flex flex-col gap-3 rounded-4xl border border-white/70 bg-white/80 px-4 py-4 shadow-[0_20px_80px_rgba(15,23,42,0.08)] backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:px-5">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-500">
