@@ -31,7 +31,7 @@ describe("GET /api/restaurants", () => {
       },
     ]);
 
-    const response = await GET(new Request("http://localhost/api/restaurants"));
+    const response = await GET();
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
@@ -54,7 +54,7 @@ describe("GET /api/restaurants", () => {
   it("returns a database error when the query fails", async () => {
     getAllRestaurantsMock.mockRejectedValue(new Error("database down"));
 
-    const response = await GET(new Request("http://localhost/api/restaurants"));
+    const response = await GET();
 
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toMatchObject({

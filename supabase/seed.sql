@@ -4,9 +4,12 @@
 -- Cara Pakai: Copy-paste isi file ini ke SQL Editor Supabase.
 -- ==========================================================
 
+-- 0. FIX: Ensure hygiene_reports.user_id is nullable (for anon reports)
+alter table hygiene_reports alter column user_id drop not null;
+
 -- 1. Bersihkan data lama (Opsional, agar tidak duplikat saat testing)
--- DELETE FROM hygiene_reports;
--- DELETE FROM restaurants;
+DELETE FROM hygiene_reports;
+DELETE FROM restaurants;
 
 -- 2. Masukkan Data Warung/Restoran
 -- PENTING: Untuk koordinat POINT, formatnya adalah (Longitude, Latitude).
@@ -141,6 +144,48 @@ VALUES
     16000,
     ST_GeographyFromText('POINT(107.776500 -6.931000)'),
     86,
+    true
+  ),
+
+  -- AREA BANDUNG (Untuk testing dari luar Jatinangor)
+  (
+    'Sate Khas Bandung Dago',
+    'Sate',
+    25000,
+    ST_GeographyFromText('POINT(107.610200 -6.883300)'),
+    96,
+    true
+  ),
+  (
+    'Nasi Goreng Braga',
+    'Nasi',
+    18000,
+    ST_GeographyFromText('POINT(107.608800 -6.914700)'),
+    89,
+    true
+  ),
+  (
+    'Warteg Asia Afrika',
+    'Warteg',
+    12000,
+    ST_GeographyFromText('POINT(107.609900 -6.921500)'),
+    74,
+    true
+  ),
+  (
+    'Bakso Alun-Alun Bandung',
+    'Bakso',
+    15000,
+    ST_GeographyFromText('POINT(107.609100 -6.921800)'),
+    91,
+    true
+  ),
+  (
+    'Kopi Cihampelas',
+    'Cafe',
+    22000,
+    ST_GeographyFromText('POINT(107.600600 -6.890200)'),
+    84,
     true
   );
 

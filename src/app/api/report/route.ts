@@ -180,11 +180,13 @@ export async function POST(request: Request): Promise<Response> {
     // 9. Catch-all: unexpected errors → INTERNAL_ERROR
     // ------------------------------------------------------------------
     const message = error instanceof Error ? error.message : String(error);
-    console.error("[POST /api/report] Unexpected error:", message);
+    const stack = error instanceof Error ? error.stack : "";
+    console.error("[POST /api/report] Unexpected error:", { message, stack });
     return Response.json(
       {
         error: `Internal server error: ${message}`,
         code: "INTERNAL_ERROR",
+        details: process.env.NODE_ENV === "development" ? stack : undefined,
       },
       { status: 500 }
     );

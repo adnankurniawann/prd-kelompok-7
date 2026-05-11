@@ -40,6 +40,12 @@ describe("PostGIS helpers", () => {
       lng: 107.77,
     });
   });
+
+  it("parses EWKB hex geography values returned by Supabase", () => {
+    expect(
+      parsePostGISPoint("0101000020E61000002D78D15790F15A409566F3380CB61BC0")
+    ).toEqual({ lat: -6.927781, lng: 107.774435 });
+  });
 });
 
 describe("getEligibleRestaurants", () => {

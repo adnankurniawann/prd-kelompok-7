@@ -137,6 +137,50 @@ export function parsePostGISPoint(
 
   // --- WKT string: POINT(lng lat) ---
   if (typeof geographyValue === "string") {
+    if (/^[0-9a-f]+$/i.test(geographyValue.trim()) && geographyValue.length >= 42) {
+      const hex = geographyValue.trim();
+
+      if (hex.length % 2 !== 0) {
+        throw new Error(
+          `parsePostGISPoint: invalid EWKB hex string length. Received: "${geographyValue}"`
+        );
+      }
+
+      const bytes = new Uint8Array(hex.length / 2);
+      for (let index = 0; index < hex.length; index += 2) {
+        bytes[index / 2] = Number.parseInt(hex.slice(index, index + 2), 16);
+      }
+
+      const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+      const littleEndian = view.getUint8(0) === 1;
+      if (!littleEndian) {
+        throw new Error(
+          `parsePostGISPoint: unsupported EWKB byte order. Received: "${geographyValue}"`
+        );
+      }
+
+      const geometryType = view.getUint32(1, true);
+      const pointType = geometryType & 0xFF;
+      if (pointType !== 1) {
+        throw new Error(
+          `parsePostGISPoint: expected EWKB Point but received geometry type ${pointType}. Value: "${geographyValue}"`
+        );
+      }
+
+      const hasSrid = (geometryType & 0x20000000) !== 0;
+      const coordinateOffset = hasSrid ? 9 : 5;
+      const lng = view.getFloat64(coordinateOffset, true);
+      const lat = view.getFloat64(coordinateOffset + 8, true);
+
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        throw new Error(
+          `parsePostGISPoint: invalid EWKB coordinate values. Received: "${geographyValue}"`
+        );
+      }
+
+      return { lat, lng };
+    }
+
     const match = geographyValue
       .trim()
       .match(/^POINT\(\s*(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s*\)$/i);
@@ -272,6 +316,8 @@ export async function saveHygieneReport(
   reportType: "RED_FLAG" | "CLEAN",
   description?: string
 ): Promise<void> {
+  console.log(`[saveHygieneReport] Saving report for restaurant ${restaurantId}, type: ${reportType}`);
+  
   const { error } = await supabase.from("hygiene_reports").insert({
     user_id: null,
     restaurant_id: restaurantId,
@@ -280,11 +326,14 @@ export async function saveHygieneReport(
   });
 
   if (error) {
+    console.error(`[saveHygieneReport] Supabase error:`, error);
     throw new Error(
       `saveHygieneReport: failed to insert hygiene report for restaurant ` +
         `"${restaurantId}". Supabase error: ${error.message} (code: ${error.code})`
     );
   }
+  
+  console.log(`[saveHygieneReport] Successfully saved report`);
 }
 
 /**
@@ -311,6 +360,8 @@ export async function updateHygieneScore(
   reportType: "RED_FLAG" | "CLEAN"
 ): Promise<Restaurant> {
   // Step 1: Fetch current hygiene_score
+  console.log(`[updateHygieneScore] Fetching current score for restaurant ${restaurantId}`);
+  
   const { data: selectData, error: selectError } = await supabase
     .from("restaurants")
     .select("hygiene_score")
@@ -318,6 +369,7 @@ export async function updateHygieneScore(
     .single();
 
   if (selectError) {
+    console.error(`[updateHygieneScore] Select error:`, selectError);
     throw new Error(
       `updateHygieneScore: failed to fetch current hygiene_score for restaurant "${restaurantId}". ` +
         `Supabase error: ${selectError.message} (code: ${selectError.code})`
@@ -333,6 +385,8 @@ export async function updateHygieneScore(
       ? Math.max(0, currentScore - 50)
       : Math.min(100, currentScore + 20);
 
+  console.log(`[updateHygieneScore] Current score: ${currentScore}, New score: ${newScore}`);
+
   // Step 3: Build update payload — only set is_verified_safe when score drops below 50
   const updatePayload: { hygiene_score: number; is_verified_safe?: boolean } = {
     hygiene_score: newScore,
@@ -340,6 +394,8 @@ export async function updateHygieneScore(
   };
 
   // Step 4: Update the row and return the updated data
+  console.log(`[updateHygieneScore] Updating restaurant with payload:`, updatePayload);
+  
   const { data: updateData, error: updateError } = await supabase
     .from("restaurants")
     .update(updatePayload)
@@ -348,11 +404,13 @@ export async function updateHygieneScore(
     .single();
 
   if (updateError) {
+    console.error(`[updateHygieneScore] Update error:`, updateError);
     throw new Error(
       `updateHygieneScore: failed to update hygiene_score for restaurant "${restaurantId}". ` +
         `Supabase error: ${updateError.message} (code: ${updateError.code})`
     );
   }
 
+  console.log(`[updateHygieneScore] Successfully updated score`);
   return updateData as Restaurant;
 }

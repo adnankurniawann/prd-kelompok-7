@@ -3,7 +3,7 @@ create extension if not exists postgis;
 create extension if not exists "uuid-ossp";
 
 -- 1. Tabel Users
-create table users (
+create table if not exists users (
   id uuid references auth.users not null primary key,
   full_name text,
   email text,
@@ -12,7 +12,7 @@ create table users (
 );
 
 -- 2. Tabel Restaurants (Warung Makan)
-create table restaurants (
+create table if not exists restaurants (
   id uuid default uuid_generate_v4() primary key,
   name text not null,
   category text, -- e.g., 'Ayam', 'Mie', 'Warteg'
@@ -48,7 +48,7 @@ as $$
     r.price_tier,
     r.hygiene_score,
     round(
-      st_distance_sphere(
+      ST_Distance(
         r.location,
         st_setsrid(st_makepoint(user_lng, user_lat), 4326)::geography
       )
@@ -56,7 +56,7 @@ as $$
   from restaurants r
   where r.hygiene_score >= 50
     and r.price_tier <= budget
-    and st_distance_sphere(
+    and ST_Distance(
       r.location,
       st_setsrid(st_makepoint(user_lng, user_lat), 4326)::geography
     ) <= radius_meters
@@ -64,7 +64,7 @@ as $$
 $$;
 
 -- 3. Tabel Hygiene Reports (Flag Kebersihan)
-create table hygiene_reports (
+create table if not exists hygiene_reports (
   id uuid default uuid_generate_v4() primary key,
   user_id uuid references users(id),
   restaurant_id uuid references restaurants(id) not null,
@@ -74,10 +74,65 @@ create table hygiene_reports (
 );
 
 -- 4. Tabel User History (Riwayat Gacha/Makan)
-create table user_history (
+create table if not exists user_history (
   id uuid default uuid_generate_v4() primary key,
   user_id uuid references users(id) not null,
   restaurant_id uuid references restaurants(id) not null,
   budget_used int,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- 5. Row Level Security dan policy akses publik untuk aplikasi.
+--    Aplikasi memakai anon key, jadi tabel yang dibaca / ditulis dari route
+--    server-side perlu policy agar query tidak kembali kosong.
+alter table restaurants enable row level security;
+alter table hygiene_reports enable row level security;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'restaurants'
+      and policyname = 'restaurants_select_public'
+  ) then
+    create policy restaurants_select_public
+      on restaurants
+      for select
+      using (true);
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'restaurants'
+      and policyname = 'restaurants_update_public'
+  ) then
+    create policy restaurants_update_public
+      on restaurants
+      for update
+      using (true)
+      with check (true);
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'hygiene_reports'
+      and policyname = 'hygiene_reports_insert_public'
+  ) then
+    create policy hygiene_reports_insert_public
+      on hygiene_reports
+      for insert
+      with check (true);
+  end if;
+end $$;
