@@ -16,6 +16,7 @@ import {
   saveHygieneReport,
   updateHygieneScore,
 } from "@/lib/supabase/queries";
+import { headers } from "next/headers";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -27,6 +28,7 @@ const UUID_REGEX =
 
 const VALID_REPORT_TYPES = ["RED_FLAG", "CLEAN"] as const;
 type ReportType = (typeof VALID_REPORT_TYPES)[number];
+const REPORT_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
 // ---------------------------------------------------------------------------
 // Route Handler
@@ -118,6 +120,9 @@ export async function POST(request: Request): Promise<Response> {
     const reportType = report_type as ReportType;
     const descriptionValue =
       typeof description === "string" ? description : undefined;
+    const headerList = await headers();
+    const forwardedFor = headerList.get("x-forwarded-for");
+    const reporterIp = forwardedFor?.split(",")[0]?.trim() || "unknown";
 
     // ------------------------------------------------------------------
     // 5. Check restaurant existence in DB
@@ -145,12 +150,52 @@ export async function POST(request: Request): Promise<Response> {
     const preUpdateRestaurant = restaurantData;
 
     // ------------------------------------------------------------------
-    // 6. Save the hygiene report
+    // 6. Rate limit: 1 report per IP per restaurant per 24 hours
     // ------------------------------------------------------------------
-    await saveHygieneReport(restaurantId, reportType, descriptionValue);
+    const cooldownThresholdIso = new Date(
+      Date.now() - REPORT_COOLDOWN_MS,
+    ).toISOString();
+    const { data: existingReports, error: rateLimitError } = await supabase
+      .from("hygiene_reports")
+      .select("id")
+      .eq("restaurant_id", restaurantId)
+      .eq("reporter_ip", reporterIp)
+      .gt("created_at", cooldownThresholdIso)
+      .limit(1);
+
+    if (rateLimitError) {
+      return Response.json(
+        {
+          error: `Failed to validate report cooldown: ${rateLimitError.message}`,
+          code: "DATABASE_ERROR",
+        },
+        { status: 500 },
+      );
+    }
+
+    if (existingReports && existingReports.length > 0) {
+      return Response.json(
+        {
+          error: "COOLDOWN_ACTIVE",
+          message:
+            "Kamu sudah melaporkan warung ini hari ini. Coba lagi besok ya.",
+        },
+        { status: 429 },
+      );
+    }
 
     // ------------------------------------------------------------------
-    // 7. Update hygiene score — partial failure: if this fails, return 200
+    // 7. Save the hygiene report
+    // ------------------------------------------------------------------
+    await saveHygieneReport(
+      restaurantId,
+      reportType,
+      descriptionValue,
+      reporterIp,
+    );
+
+    // ------------------------------------------------------------------
+    // 8. Update hygiene score — partial failure: if this fails, return 200
     //    with the pre-update restaurant data
     // ------------------------------------------------------------------
     let updatedRestaurant;
@@ -172,12 +217,12 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     // ------------------------------------------------------------------
-    // 8. Return success response with updated restaurant data
+    // 9. Return success response with updated restaurant data
     // ------------------------------------------------------------------
     return Response.json({ data: updatedRestaurant }, { status: 200 });
   } catch (error) {
     // ------------------------------------------------------------------
-    // 9. Catch-all: unexpected errors → INTERNAL_ERROR
+    // 10. Catch-all: unexpected errors → INTERNAL_ERROR
     // ------------------------------------------------------------------
     const message = error instanceof Error ? error.message : String(error);
     const stack = error instanceof Error ? error.stack : "";

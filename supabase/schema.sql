@@ -70,8 +70,15 @@ create table if not exists hygiene_reports (
   restaurant_id uuid references restaurants(id) not null,
   report_type text not null, -- 'RED_FLAG' atau 'CLEAN'
   description text, -- "Banyak lalat di etalase"
+  reporter_ip text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+alter table hygiene_reports
+  add column if not exists reporter_ip text;
+
+create index if not exists hygiene_reports_restaurant_ip_created_at_idx
+  on hygiene_reports (restaurant_id, reporter_ip, created_at desc);
 
 -- 4. Tabel User History (Riwayat Gacha/Makan)
 create table if not exists user_history (
