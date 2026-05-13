@@ -160,9 +160,20 @@ export default function MapPage() {
         }),
       });
 
-      const payload = (await response.json()) as { data?: Restaurant; error?: string };
+      const payload = (await response.json()) as {
+        data?: Restaurant;
+        error?: string;
+        message?: string;
+      };
 
       if (!response.ok) {
+        if (response.status === 429) {
+          setReportMessage(
+            payload.message ??
+              "Kamu sudah melaporkan warung ini hari ini. Coba lagi besok ya.",
+          );
+          return;
+        }
         setReportMessage(payload.error ?? "Gagal mengirim report.");
         return;
       }

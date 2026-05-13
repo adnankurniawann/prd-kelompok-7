@@ -314,7 +314,8 @@ export async function getEligibleRestaurants(
 export async function saveHygieneReport(
   restaurantId: string,
   reportType: "RED_FLAG" | "CLEAN",
-  description?: string
+  description?: string,
+  reporterIp?: string
 ): Promise<void> {
   console.log(`[saveHygieneReport] Saving report for restaurant ${restaurantId}, type: ${reportType}`);
   
@@ -323,6 +324,7 @@ export async function saveHygieneReport(
     restaurant_id: restaurantId,
     report_type: reportType,
     description: description ?? null,
+    reporter_ip: reporterIp ?? null,
   });
 
   if (error) {
