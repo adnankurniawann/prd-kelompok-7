@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 
 type SpinResult = {
   id: string;
@@ -24,7 +24,9 @@ const BLIND_PRESETS = [
 ] as const;
 
 function formatMeters(value: number): string {
-  return value >= 1000 ? `${(value / 1000).toFixed(1)} km` : `${Math.round(value)} m`;
+  return value >= 1000
+    ? `${(value / 1000).toFixed(1)} km`
+    : `${Math.round(value)} m`;
 }
 
 function hygieneLabel(score: number): string {
@@ -37,7 +39,9 @@ export default function BlindPage() {
   const [isRolling, setIsRolling] = useState(false);
   const [result, setResult] = useState<SpinResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [usedPreset, setUsedPreset] = useState<(typeof BLIND_PRESETS)[number] | null>(null);
+  const [usedPreset, setUsedPreset] = useState<
+    (typeof BLIND_PRESETS)[number] | null
+  >(null);
   const [rollingPresetLabel, setRollingPresetLabel] = useState("--");
 
   useEffect(() => {
@@ -46,7 +50,8 @@ export default function BlindPage() {
     }
 
     const ticker = window.setInterval(() => {
-      const randomPreset = BLIND_PRESETS[Math.floor(Math.random() * BLIND_PRESETS.length)];
+      const randomPreset =
+        BLIND_PRESETS[Math.floor(Math.random() * BLIND_PRESETS.length)];
       setRollingPresetLabel(randomPreset.label);
     }, 120);
 
@@ -54,7 +59,8 @@ export default function BlindPage() {
   }, [isRolling]);
 
   const rollHint = useMemo(() => {
-    if (!usedPreset) return "Tekan tombol dan biarkan sistem memilih budget + radius otomatis.";
+    if (!usedPreset)
+      return "Tekan tombol dan biarkan sistem memilih budget + radius secara acak.";
     return `Preset terakhir: ${usedPreset.label} • Rp ${usedPreset.budget.toLocaleString("id-ID")} • ${usedPreset.radius} m`;
   }, [usedPreset]);
 
@@ -69,7 +75,8 @@ export default function BlindPage() {
     let nextResult: SpinResult | null = null;
     let nextError: string | null = null;
 
-    const pickedPreset = BLIND_PRESETS[Math.floor(Math.random() * BLIND_PRESETS.length)];
+    const pickedPreset =
+      BLIND_PRESETS[Math.floor(Math.random() * BLIND_PRESETS.length)];
     setUsedPreset(pickedPreset);
     setRollingPresetLabel(pickedPreset.label);
 
@@ -106,60 +113,74 @@ export default function BlindPage() {
   };
 
   return (
-    <main
-      className="min-h-screen text-white"
-      style={{
-        backgroundImage:
-          "radial-gradient(circle at top, #1e1b4b 0%, #0f172a 42%, #020617 100%)",
-      }}
-    >
-      <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-3 py-4 sm:px-6 sm:py-5 lg:px-8">
-        <header className="flex flex-col gap-3 rounded-3xl border border-white/10 bg-white/5 px-4 py-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-indigo-200">
-              Blind Gacha
-            </p>
-            <h1 className="mt-1 text-xl font-black tracking-tight sm:text-3xl">
-              Mode Kejutan Tanpa Pilih-Pilih.
-            </h1>
-          </div>
-          <Link
-            href="/"
-            className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
-          >
-            Back home
-          </Link>
-        </header>
+    <main className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-20">
+      {/* STICKY HEADER - Konsisten dengan halaman lain */}
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-200/60 px-4 md:px-8 py-3 shadow-sm flex items-center gap-3">
+        <Link
+          href="/"
+          className="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition-all active:scale-95 font-bold"
+        >
+          ←
+        </Link>
+        <h1 className="text-lg font-bold text-slate-800 tracking-tight">
+          Blind Gacha
+        </h1>
+      </header>
 
-        <section className="mt-4 grid flex-1 gap-4 lg:grid-cols-[1fr_1fr] lg:gap-5">
-          <div className="space-y-4 rounded-3xl border border-white/10 bg-white/4 p-4 sm:p-5">
-            <div className="rounded-2xl border border-indigo-300/20 bg-indigo-400/10 p-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-indigo-100/80">Cara main</p>
-              <p className="mt-2 text-sm leading-6 text-slate-200">
-                Kamu tidak set budget, radius, atau kategori. Sistem memilih preset secara acak,
-                lalu menjalankan spin otomatis.
+      <div className="mx-auto max-w-6xl w-full px-4 md:px-8 pt-6 flex flex-col md:grid md:grid-cols-12 gap-6 lg:gap-8">
+        {/* KOLOM KIRI: KONTROL BLIND GACHA */}
+        <div className="md:col-span-6 flex flex-col gap-6">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col gap-5 relative overflow-hidden">
+            {/* Info Cara Main */}
+            <div className="rounded-xl border border-sky-100 bg-sky-50 p-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-sky-600 mb-1">
+                Cara main
+              </p>
+              <p className="text-sm font-medium leading-relaxed text-slate-600">
+                Kamu tidak perlu repot set budget, radius, atau kategori. Sistem
+                akan mengacak preset gaya makanmu dan langsung mencarikan
+                restoran yang cocok.
               </p>
             </div>
 
-            <div className="relative flex min-h-64 items-center justify-center overflow-hidden rounded-3xl border border-white/10 bg-white/5 py-8">
+            {/* Container Tombol Spin Besar */}
+            <div className="relative flex flex-col items-center justify-center min-h-[300px] rounded-2xl border border-slate-100 bg-slate-50 py-8 overflow-hidden">
+              {/* Animasi Gelombang Cincin ala Radar */}
               <motion.div
-                className="absolute h-56 w-56 rounded-full border border-violet-300/30"
-                animate={isRolling ? { scale: [1, 1.18, 1], opacity: [0.5, 0.12, 0.5] } : { scale: 1, opacity: 0.35 }}
-                transition={{ duration: 1.1, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute h-56 w-56 rounded-full border border-slate-300/50"
+                animate={
+                  isRolling
+                    ? { scale: [1, 1.18, 1], opacity: [0.5, 0.1, 0.5] }
+                    : { scale: 1, opacity: 0.3 }
+                }
+                transition={{
+                  duration: 1.1,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
               />
               <motion.div
-                className="absolute h-44 w-44 rounded-full border border-indigo-300/20"
-                animate={isRolling ? { scale: [1, 1.14, 1], opacity: [0.45, 0.18, 0.45] } : { scale: 1, opacity: 0.3 }}
-                transition={{ duration: 0.85, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute h-44 w-44 rounded-full border border-slate-400/40"
+                animate={
+                  isRolling
+                    ? { scale: [1, 1.14, 1], opacity: [0.6, 0.2, 0.6] }
+                    : { scale: 1, opacity: 0.4 }
+                }
+                transition={{
+                  duration: 0.85,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
               />
 
+              {/* Tombol Roll (Warna Slate Dark khas Blind Mode di Home) */}
               <motion.button
                 type="button"
                 onClick={runBlindSpin}
                 disabled={isRolling}
                 animate={
                   isRolling
-                    ? { rotate: [0, 180, 360], scale: [1, 1.06, 1] }
+                    ? { rotate: [0, 180, 360], scale: [1, 1.05, 1] }
                     : { rotate: 0, scale: 1 }
                 }
                 transition={
@@ -167,78 +188,126 @@ export default function BlindPage() {
                     ? { repeat: Infinity, duration: 1.0, ease: "linear" }
                     : { duration: 0.25 }
                 }
-                className="relative z-10 flex h-40 w-40 items-center justify-center rounded-full border border-white/20 bg-linear-to-br from-violet-500 to-indigo-500 text-lg font-black shadow-[0_24px_70px_rgba(99,102,241,0.45)] disabled:cursor-not-allowed sm:h-44 sm:w-44 sm:text-xl"
+                className="relative z-10 flex flex-col h-40 w-40 sm:h-44 sm:w-44 items-center justify-center rounded-full border-[6px] border-white bg-gradient-to-br from-slate-700 to-slate-900 text-white shadow-xl shadow-slate-900/20 disabled:opacity-90 active:scale-95 transition-all"
               >
-                {isRolling ? "ROLLING" : "BLIND ROLL"}
+                <span className="text-4xl mb-2">{isRolling ? "🎲" : "🎲"}</span>
+                <span className="text-lg font-black tracking-tight drop-shadow-sm">
+                  {isRolling ? "ROLLING..." : "BLIND ROLL"}
+                </span>
               </motion.button>
 
-              <div className="absolute bottom-4 left-4 right-4 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-center text-xs font-semibold text-indigo-100">
-                {isRolling ? `Memilih preset: ${rollingPresetLabel}` : "Tekan tombol untuk mulai blind spin"}
+              {/* Status Pemilihan Preset Live */}
+              <div className="absolute bottom-4 left-4 right-4 rounded-xl border border-slate-200 bg-white/80 backdrop-blur px-3 py-2 text-center text-xs font-semibold text-slate-700 shadow-sm">
+                {isRolling ? (
+                  <span className="text-sky-600 animate-pulse">
+                    Mengacak takdir: {rollingPresetLabel}...
+                  </span>
+                ) : (
+                  "Tekan tombol di atas untuk mulai!"
+                )}
               </div>
             </div>
 
-            {isRolling ? (
-              <div className="h-2 overflow-hidden rounded-full bg-white/10">
+            {/* Progress Bar Loading */}
+            {isRolling && (
+              <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
                 <motion.div
-                  className="h-full rounded-full bg-linear-to-r from-violet-400 via-indigo-300 to-cyan-300"
-                  animate={{ x: ["-35%", "100%"] }}
-                  transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}
+                  className="h-full rounded-full bg-slate-800"
+                  animate={{ x: ["-100%", "250%"] }}
+                  transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
                   style={{ width: "40%" }}
                 />
               </div>
-            ) : null}
+            )}
 
-            <p className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
+            {/* Info Hint Terakhir */}
+            <p className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-xs font-medium text-slate-500 text-center">
               {rollHint}
             </p>
 
-            {error ? (
-              <p className="rounded-2xl border border-rose-300/30 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
-                {error}
-              </p>
-            ) : null}
+            {/* Pesan Error */}
+            {error && (
+              <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600 font-medium text-center">
+                ⚠ {error}
+              </div>
+            )}
           </div>
+        </div>
 
-          <div className="rounded-3xl border border-white/10 bg-white/4 p-4 sm:p-5">
+        {/* KOLOM KANAN: HASIL GACHA */}
+        <div className="md:col-span-6 flex flex-col gap-6">
+          <AnimatePresence mode="wait">
             {result ? (
-              <div className="space-y-4 rounded-2xl border border-emerald-300/20 bg-emerald-400/10 p-4">
-                <p className="text-xs uppercase tracking-[0.3em] text-emerald-100/90">Hasil blind mode</p>
-                <h2 className="text-3xl font-black leading-tight">{result.name}</h2>
-
-                <div className="flex flex-wrap gap-2 text-xs font-semibold">
-                  <span className="rounded-full bg-white/10 px-3 py-1">
-                    Rp {result.price_tier.toLocaleString("id-ID")}
-                  </span>
-                  <span className="rounded-full bg-white/10 px-3 py-1">{formatMeters(result.distance)}</span>
-                  <span className="rounded-full bg-white/10 px-3 py-1">{result.category ?? "Umum"}</span>
-                  <span className="rounded-full bg-white/10 px-3 py-1">
-                    {hygieneLabel(result.hygiene_score)} · {result.hygiene_score}
-                  </span>
+              <motion.div
+                key={result.id}
+                initial={{ opacity: 0, y: 15, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                className="bg-white rounded-2xl border-2 border-emerald-100 shadow-sm p-6 md:p-8 relative overflow-hidden group hover:border-emerald-200 transition-colors h-full flex flex-col"
+              >
+                <div className="absolute top-0 right-0 p-5 opacity-10 text-6xl group-hover:rotate-12 group-hover:scale-110 group-hover:text-emerald-500 transition-all duration-500">
+                  ✅
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <div className="inline-block px-3 py-1 bg-emerald-100 text-emerald-700 rounded-md text-[10px] font-bold uppercase tracking-widest border border-emerald-200 mb-4 shadow-inner">
+                    Kejutan Didapat
+                  </div>
+                  <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mb-3">
+                    {result.name}
+                  </h2>
+
+                  <div className="flex flex-wrap gap-2.5 mt-3">
+                    <span className="px-3.5 py-1.5 bg-slate-50 rounded-lg text-xs font-semibold text-slate-600 border border-slate-100">
+                      Rp {result.price_tier.toLocaleString("id-ID")}
+                    </span>
+                    <span className="px-3.5 py-1.5 bg-slate-50 rounded-lg text-xs font-semibold text-slate-600 border border-slate-100">
+                      📍 {formatMeters(result.distance)}
+                    </span>
+                    <span className="px-3.5 py-1.5 bg-slate-50 rounded-lg text-xs font-semibold text-slate-600 border border-slate-100">
+                      🍴 {result.category ?? "Umum"}
+                    </span>
+                    <span className="px-3.5 py-1.5 bg-slate-50 rounded-lg text-xs font-semibold text-slate-600 border border-slate-100">
+                      🛡️ Score: {result.hygiene_score}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-auto pt-8 flex flex-col sm:flex-row gap-4">
                   <Link
                     href="/map"
-                    className="rounded-2xl bg-white px-4 py-3 text-center text-sm font-semibold text-slate-950 transition hover:bg-slate-100"
+                    className="flex-1 bg-slate-900 text-white py-3.5 rounded-xl text-center text-sm font-semibold shadow-sm transition-all hover:bg-slate-800 active:scale-[0.98]"
                   >
-                    Lihat di map
+                    📍 Lihat di Radar Map
                   </Link>
                   <button
                     type="button"
                     onClick={runBlindSpin}
-                    className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/15"
+                    className="flex-1 border border-slate-200 py-3.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 active:scale-[0.98] hover:border-slate-300 transition-all"
                   >
-                    Roll lagi
+                    🔄 Roll Ulang
                   </button>
                 </div>
-              </div>
+              </motion.div>
             ) : (
-              <div className="flex h-full min-h-60 items-center justify-center rounded-2xl border border-dashed border-white/20 bg-white/5 p-5 text-center text-slate-300">
-                Belum ada hasil. Tekan BLIND ROLL untuk mulai.
-              </div>
+              <motion.div
+                key="empty-state"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="bg-white rounded-2xl border-2 border-dashed border-slate-200 p-10 text-center flex flex-col items-center justify-center h-full min-h-[350px]"
+              >
+                <span className="text-5xl mb-4 opacity-50 grayscale">🎁</span>
+                <h3 className="text-lg font-bold text-slate-800 mb-1">
+                  Belum Ada Kejutan
+                </h3>
+                <p className="text-sm font-medium text-slate-500 max-w-sm leading-relaxed">
+                  Tekan tombol BLIND ROLL di sebelah kiri, dan biarkan sistem
+                  yang memilih takdir makan siangmu!
+                </p>
+              </motion.div>
             )}
-          </div>
-        </section>
+          </AnimatePresence>
+        </div>
       </div>
     </main>
   );
