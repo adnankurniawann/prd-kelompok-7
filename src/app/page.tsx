@@ -15,7 +15,12 @@ export default function Home() {
             Gacha Makan
           </h1>
         </div>
-        <div className="flex items-center gap-3 group cursor-pointer">
+
+        {/* Foto Profil yang bisa diklik -> ke /account */}
+        <Link
+          href="/account"
+          className="flex items-center gap-3 group cursor-pointer transition-transform active:scale-95"
+        >
           <div className="text-right hidden sm:block">
             <p className="text-[10px] font-medium uppercase tracking-widest text-slate-400">
               Jatinangor
@@ -31,7 +36,7 @@ export default function Home() {
               className="w-full h-full object-cover"
             />
           </div>
-        </div>
+        </Link>
       </header>
 
       {/* ========================================= */}
@@ -203,7 +208,8 @@ export default function Home() {
                     Warteg X, Ciseke
                   </h4>
                   <p className="text-xs text-slate-500 mt-1 leading-relaxed font-normal">
-                    &quot;Banyak lalat di etalase, ada 3 orang lapor sakit perut kemarin.&quot;
+                    "Banyak lalat di etalase, ada 3 orang lapor sakit perut
+                    kemarin."
                   </p>
                   <p className="text-[10px] text-red-400 font-medium mt-2 uppercase tracking-wide">
                     2 jam yang lalu
@@ -273,4 +279,3 @@ export default function Home() {
     </main>
   );
 }
-

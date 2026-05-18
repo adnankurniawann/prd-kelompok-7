@@ -8,40 +8,44 @@ export const metadata = {
 
 export default function LoginPage() {
   return (
-    <main className="min-h-screen bg-[#0e1b28] px-4 py-6 text-white sm:px-6 sm:py-8">
-      <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-[1080px] items-center justify-center rounded-[2rem] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.12),transparent_35%),linear-gradient(180deg,#0f2232_0%,#0b1620_100%)] p-4 shadow-[0_30px_120px_rgba(2,8,23,0.45)] sm:p-8">
-        <div className="w-full max-w-md">
-          <div className="rounded-[2rem] border border-white/10 bg-[#17283a]/95 p-6 shadow-[0_24px_90px_rgba(2,8,23,0.4)] sm:p-8">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-[0.7rem] font-bold uppercase tracking-[0.4em] text-cyan-400">
-                  Email login
-                </p>
-                <h1 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">
-                  Magic link ke inbox kamu.
-                </h1>
-                <p className="mt-3 max-w-sm text-sm leading-6 text-slate-400 sm:text-base">
-                  Masukkan email, kami kirim link. Klik link itu langsung login tanpa password.
-                </p>
-              </div>
-              <div className="hidden h-14 w-14 shrink-0 items-center justify-center rounded-full bg-cyan-400 text-lg font-black text-slate-950 sm:flex">
-                GM
-              </div>
-            </div>
+    <main className="min-h-screen bg-slate-50 font-sans flex flex-col items-center justify-center p-4 sm:p-6 selection:bg-rose-500 selection:text-white">
+      {/* Brand Header */}
+      <div className="mb-8 text-center">
+        <h1 className="text-4xl sm:text-5xl font-black tracking-tight">
+          <span className="text-slate-900">Gacha</span>
+          <span className="text-rose-600">Makan</span>
+        </h1>
+      </div>
 
-            <div className="mt-8">
-              <AuthPanel variant="full" className="border-0 bg-transparent p-0 shadow-none" />
-            </div>
+      {/* Login Card dengan sedikit warna latar (Soft Rose) */}
+      <div className="w-full max-w-[400px] rounded-3xl border border-rose-100 bg-rose-50/30 p-6 sm:p-8 shadow-sm backdrop-blur-sm">
+        {/* Judul ke tengah */}
+        <div className="mb-6 text-center">
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+            Login
+          </h2>
+          <p className="mt-1.5 text-sm text-slate-500 leading-relaxed">
+            Masukkan email kamu di bawah. Kami akan mengirimkan link khusus agar
+            kamu bisa langsung masuk ke aplikasi.
+          </p>
+        </div>
 
-            <div className="mt-6 text-center">
-              <Link
-                href="/"
-                className="text-xs font-semibold text-slate-400 transition hover:text-cyan-300"
-              >
-                Kembali ke homepage
-              </Link>
-            </div>
-          </div>
+        {/* Area Komponen AuthPanel */}
+        <div>
+          <AuthPanel
+            variant="full"
+            className="border-0 bg-transparent p-0 shadow-none"
+          />
+        </div>
+
+        {/* Back to Home (Tanpa Logo Panah) */}
+        <div className="mt-6 pt-6 border-t border-slate-200/60 text-center">
+          <Link
+            href="/"
+            className="text-sm font-semibold text-slate-500 transition-colors hover:text-slate-900 active:scale-95 inline-block"
+          >
+            Kembali ke Beranda
+          </Link>
         </div>
       </div>
     </main>
