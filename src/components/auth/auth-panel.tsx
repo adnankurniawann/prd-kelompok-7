@@ -55,6 +55,7 @@ export function AuthPanel({ variant = "compact", className = "" }: AuthPanelProp
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -84,6 +85,47 @@ export function AuthPanel({ variant = "compact", className = "" }: AuthPanelProp
     };
   }, []);
 
+  useEffect(() => {
+    if (cooldownSeconds <= 0) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setCooldownSeconds((currentValue) => {
+        if (currentValue <= 1) {
+          window.clearInterval(timer);
+          return 0;
+        }
+
+        return currentValue - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [cooldownSeconds]);
+
+  const getMagicLinkErrorMessage = (authError: unknown): string => {
+    if (authError && typeof authError === "object") {
+      const error = authError as { message?: string; status?: number; code?: string };
+
+      if (error.status === 429 || error.code === "over_email_send_rate_limit") {
+        setCooldownSeconds(60);
+        return "Terlalu sering kirim email. Tunggu 60 detik lalu coba lagi.";
+      }
+
+      const message = error.message ?? "Gagal mengirim magic link.";
+
+      return message;
+    }
+
+    if (authError instanceof Error && /rate.?limit|too many/i.test(authError.message)) {
+      setCooldownSeconds(60);
+      return "Terlalu sering kirim email. Tunggu 60 detik lalu coba lagi.";
+    }
+
+    return "Gagal mengirim magic link.";
+  };
+
   const handleMagicLink = async () => {
     const trimmedEmail = email.trim();
 
@@ -92,12 +134,17 @@ export function AuthPanel({ variant = "compact", className = "" }: AuthPanelProp
       return;
     }
 
+    if (cooldownSeconds > 0) {
+      setErrorMessage(`Tunggu ${cooldownSeconds} detik sebelum kirim lagi.`);
+      return;
+    }
+
     setIsBusy(true);
     setErrorMessage(null);
     setSuccessMessage(null);
 
     try {
-      const redirectTo = `${window.location.origin}/login`;
+      const redirectTo = `${window.location.origin}/account`;
       const { error } = await supabase.auth.signInWithOtp({
         email: trimmedEmail,
         options: {
@@ -111,7 +158,7 @@ export function AuthPanel({ variant = "compact", className = "" }: AuthPanelProp
 
       setSuccessMessage("Link login sudah dikirim. Cek inbox atau spam email kamu.");
     } catch (authError) {
-      setErrorMessage(authError instanceof Error ? authError.message : "Gagal mengirim magic link.");
+      setErrorMessage(getMagicLinkErrorMessage(authError));
     }
 
     setIsBusy(false);
@@ -173,10 +220,14 @@ export function AuthPanel({ variant = "compact", className = "" }: AuthPanelProp
             <button
               type="button"
               onClick={() => void handleMagicLink()}
-              disabled={isBusy}
+              disabled={isBusy || cooldownSeconds > 0}
               className="flex w-full items-center justify-center rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {isBusy ? "Mengirim..." : "Kirim magic link"}
+              {isBusy
+                ? "Mengirim..."
+                : cooldownSeconds > 0
+                  ? `Tunggu ${cooldownSeconds} detik`
+                  : "Kirim magic link"}
             </button>
           </div>
         )}

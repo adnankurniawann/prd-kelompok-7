@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { AccountRedirect } from "@/components/auth/account-redirect";
 
 export default function Home() {
   return (
     <main className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-20 selection:bg-rose-500 selection:text-white">
+      <AccountRedirect />
       {/* ========================================= */}
       {/* HEADER - Lebih clean dan ringan           */}
       {/* ========================================= */}
@@ -203,8 +205,7 @@ export default function Home() {
                     Warteg X, Ciseke
                   </h4>
                   <p className="text-xs text-slate-500 mt-1 leading-relaxed font-normal">
-                    "Banyak lalat di etalase, ada 3 orang lapor sakit perut
-                    kemarin."
+                    &quot;Banyak lalat di etalase, ada 3 orang lapor sakit perut kemarin.&quot;
                   </p>
                   <p className="text-[10px] text-red-400 font-medium mt-2 uppercase tracking-wide">
                     2 jam yang lalu
@@ -274,3 +275,4 @@ export default function Home() {
     </main>
   );
 }
+
