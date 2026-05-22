@@ -1,18 +1,28 @@
 "use client";
 
+import type { RestaurantMapItem } from "@/components/map/restaurant-map";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 
-type Restaurant = {
-  id: string;
-  name: string;
-  category: string | null;
-  price_tier: number;
-  hygiene_score: number;
+const RestaurantMap = dynamic(
+  () =>
+    import("@/components/map/restaurant-map").then(
+      (module) => module.RestaurantMap,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full min-h-[350px] items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-500">
+        Memuat peta...
+      </div>
+    ),
+  },
+);
+
+type Restaurant = RestaurantMapItem & {
   is_verified_safe: boolean;
-  lat: number;
-  lng: number;
-  hygiene_status: "RED" | "GREEN";
 };
 
 const DEFAULT_LOCATION = { lat: -6.9262, lng: 107.7717 };
@@ -28,22 +38,23 @@ function statusTone(status: Restaurant["hygiene_status"]): string {
     : "bg-rose-50 text-rose-700 border-rose-200";
 }
 
-function plotPosition(
-  userLat: number,
-  userLng: number,
-  lat: number,
-  lng: number,
-) {
-  const x = Math.max(-42, Math.min(42, (lng - userLng) * 9000));
-  const y = Math.max(-42, Math.min(42, (lat - userLat) * -9000));
-
-  return {
-    left: `calc(50% + ${x}%)`,
-    top: `calc(50% + ${y}%)`,
-  };
+function MapPageFallback() {
+  return (
+    <main className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-20">
+      <header className="sticky top-0 z-50 border-b border-slate-200/60 bg-white/80 px-4 py-3 shadow-sm backdrop-blur-lg md:px-8">
+        <h1 className="text-lg font-bold text-slate-800">Peta Higienitas</h1>
+      </header>
+      <div className="mx-auto flex max-w-6xl items-center justify-center px-4 py-20 text-sm font-medium text-slate-500">
+        Memuat peta...
+      </div>
+    </main>
+  );
 }
 
-export default function MapPage() {
+function MapPageContent() {
+  const searchParams = useSearchParams();
+  const restaurantIdFromUrl = searchParams.get("restaurant_id");
+
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +74,21 @@ export default function MapPage() {
   ); // 5 seconds
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
-  const loadRestaurants = async () => {
+  const resolveSelectedRestaurant = useCallback(
+    (list: Restaurant[], preferredId?: string | null) => {
+      if (preferredId) {
+        const fromPreferred = list.find((item) => item.id === preferredId);
+        if (fromPreferred) {
+          return fromPreferred;
+        }
+      }
+
+      return list[0] ?? null;
+    },
+    [],
+  );
+
+  const loadRestaurants = async (preferredRestaurantId?: string | null) => {
     setIsLoading(true);
     setError(null);
 
@@ -80,7 +105,25 @@ export default function MapPage() {
 
       const nextRestaurants = payload.data ?? [];
       setRestaurants(nextRestaurants);
-      setSelectedRestaurant((current) => current ?? nextRestaurants[0] ?? null);
+
+      const targetId = preferredRestaurantId ?? restaurantIdFromUrl;
+      setSelectedRestaurant((current) => {
+        if (targetId) {
+          const matched = nextRestaurants.find((item) => item.id === targetId);
+          if (matched) {
+            return matched;
+          }
+        }
+
+        if (
+          current &&
+          nextRestaurants.some((item) => item.id === current.id)
+        ) {
+          return current;
+        }
+
+        return resolveSelectedRestaurant(nextRestaurants, targetId);
+      });
     } catch (fetchError) {
       setError(
         fetchError instanceof Error
@@ -104,11 +147,24 @@ export default function MapPage() {
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
-      void loadRestaurants();
+      void loadRestaurants(restaurantIdFromUrl);
     });
 
     return () => window.cancelAnimationFrame(frame);
-  }, []);
+  }, [restaurantIdFromUrl]);
+
+  useEffect(() => {
+    if (!restaurantIdFromUrl || restaurants.length === 0) {
+      return;
+    }
+
+    const matched = restaurants.find((item) => item.id === restaurantIdFromUrl);
+    if (matched) {
+      setSelectedRestaurant(matched);
+      setStatusFilter("ALL");
+      setQuery("");
+    }
+  }, [restaurantIdFromUrl, restaurants]);
 
   useEffect(() => {
     if (!navigator.geolocation) {
@@ -223,7 +279,7 @@ export default function MapPage() {
             ←
           </Link>
           <h1 className="text-lg font-bold text-slate-800 tracking-tight">
-            Radar Map
+            Peta Higienitas
           </h1>
         </div>
         <div className="flex gap-2">
@@ -238,7 +294,7 @@ export default function MapPage() {
       </header>
 
       <div className="mx-auto max-w-6xl w-full px-4 md:px-8 pt-6 flex flex-col lg:grid lg:grid-cols-[1.1fr_0.9fr] gap-6 lg:gap-8">
-        {/* KOLOM KIRI: FILTER & RADAR */}
+        {/* KOLOM KIRI: FILTER & PETA */}
         <section className="flex flex-col gap-5">
           {/* Panel Pencarian & Filter */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
@@ -320,54 +376,31 @@ export default function MapPage() {
             </p>
           </div>
 
-          {/* Radar Visualization - Estetik dan Clean */}
-          <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm h-[350px] md:h-[450px]">
-            {/* Pattern Grid Maps */}
-            <div
-              className="absolute inset-0 bg-slate-50 opacity-50"
-              style={{
-                backgroundImage:
-                  "radial-gradient(#cbd5e1 1px, transparent 1px)",
-                backgroundSize: "20px 20px",
-              }}
-            />
-
-            {/* Lingkaran Radar */}
-            <div className="absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full border border-sky-200/60" />
-            <div className="absolute left-1/2 top-1/2 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full border border-sky-300/40" />
-
-            <div className="relative w-full h-full">
-              {/* Titik Lokasi User */}
-              <div
-                className="absolute left-1/2 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-sky-500 shadow-[0_0_0_6px_rgba(14,165,233,0.2)] z-10"
-                title="Lokasi kamu"
+          {/* Peta interaktif Leaflet + OpenStreetMap */}
+          <div className="relative h-[350px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm md:h-[450px]">
+            {isLoading ? (
+              <div className="flex h-full items-center justify-center bg-slate-50 text-sm font-medium text-slate-500">
+                Memuat peta restoran...
+              </div>
+            ) : error ? (
+              <div className="flex h-full items-center justify-center bg-rose-50 px-6 text-center text-sm font-medium text-rose-600">
+                {error}
+              </div>
+            ) : (
+              <RestaurantMap
+                restaurants={sortedRestaurants}
+                selectedRestaurantId={selectedRestaurant?.id ?? null}
+                userLat={userLat}
+                userLng={userLng}
+                onSelectRestaurant={(restaurant) => {
+                  const fullRestaurant =
+                    sortedRestaurants.find((item) => item.id === restaurant.id) ??
+                    null;
+                  setSelectedRestaurant(fullRestaurant);
+                }}
+                className="h-full"
               />
-
-              {/* Titik Restoran */}
-              {sortedRestaurants.map((restaurant) => (
-                <button
-                  key={restaurant.id}
-                  type="button"
-                  onClick={() => setSelectedRestaurant(restaurant)}
-                  className={`absolute flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 px-2.5 py-1.5 text-xs font-bold shadow-sm transition-all hover:scale-110 ${
-                    restaurant.hygiene_status === "GREEN"
-                      ? "border-emerald-100 bg-emerald-500 text-white"
-                      : "border-rose-100 bg-rose-500 text-white"
-                  } ${selectedRestaurant?.id === restaurant.id ? "ring-4 ring-sky-200 scale-110 z-20" : "z-10 opacity-90"}`}
-                  style={plotPosition(
-                    userLat,
-                    userLng,
-                    restaurant.lat,
-                    restaurant.lng,
-                  )}
-                >
-                  <span className="inline-flex h-1.5 w-1.5 rounded-full bg-white mr-1.5" />
-                  <span className="max-w-[100px] truncate">
-                    {restaurant.name}
-                  </span>
-                </button>
-              ))}
-            </div>
+            )}
           </div>
 
           {/* Restaurant Mobile Picker (Drop list) */}
@@ -578,7 +611,7 @@ export default function MapPage() {
             <div className="flex-1 flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-slate-200 rounded-xl">
               <span className="text-3xl mb-3 opacity-50">🧭</span>
               <p className="text-sm font-medium text-slate-400">
-                Pilih restoran dari radar atau daftar untuk melihat detail dan
+                Pilih restoran dari peta atau daftar untuk melihat detail dan
                 mengirim laporan.
               </p>
             </div>
@@ -586,5 +619,13 @@ export default function MapPage() {
         </aside>
       </div>
     </main>
+  );
+}
+
+export default function MapPage() {
+  return (
+    <Suspense fallback={<MapPageFallback />}>
+      <MapPageContent />
+    </Suspense>
   );
 }
