@@ -6,7 +6,15 @@ export const metadata = {
   description: "Masuk ke Gacha Makan dengan magic link email.",
 };
 
-export default function LoginPage() {
+type LoginPageProps = {
+  searchParams: Promise<{ error?: string; message?: string }>;
+};
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const params = await searchParams;
+  const authCallbackFailed = params.error === "auth_callback_failed";
+  const callbackMessage = params.message;
+
   return (
     <main className="min-h-screen bg-slate-50 font-sans flex flex-col items-center justify-center p-4 sm:p-6 selection:bg-rose-500 selection:text-white">
       {/* Brand Header */}
@@ -29,6 +37,13 @@ export default function LoginPage() {
             kamu bisa langsung masuk ke aplikasi.
           </p>
         </div>
+
+        {authCallbackFailed ? (
+          <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-center text-sm font-medium text-rose-600">
+            {callbackMessage ??
+              "Login dari email gagal. Coba kirim magic link lagi."}
+          </div>
+        ) : null}
 
         {/* Area Komponen AuthPanel */}
         <div>
