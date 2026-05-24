@@ -377,15 +377,15 @@ export default function SpinPage() {
                 <div className="mt-7 flex flex-col sm:flex-row gap-4">
                   <Link
                     href={`/map?restaurant_id=${encodeURIComponent(result.id)}`}
-                    className="flex-1 bg-slate-800 text-white py-3.5 rounded-xl text-center text-sm font-semibold shadow-sm transition-all hover:bg-slate-900 active:scale-[0.98]"
+                    className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-slate-800 py-3.5 text-sm font-semibold !text-white shadow-sm transition-all hover:bg-slate-900 active:scale-[0.98]"
                   >
-                    📍 Lihat di Peta
+                    <span className="text-base">📍</span> <span className="!text-white">Lihat di Peta</span>
                   </Link>
                   <button
                     onClick={handleSpin}
-                    className="flex-1 border border-slate-200 py-3.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 active:scale-[0.98] hover:border-slate-300 hover:text-slate-700 transition-all"
+                    className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-3.5 text-sm font-semibold text-slate-600 transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700 active:scale-[0.98]"
                   >
-                    🔄 Spin Ulang Takdir
+                    <span className="text-base">🔄</span> Spin Ulang Takdir
                   </button>
                 </div>
               </motion.div>

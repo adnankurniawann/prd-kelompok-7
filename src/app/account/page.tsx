@@ -42,7 +42,8 @@ export default function AccountPage() {
       setSession(data.session ?? null);
       setIsLoading(false);
       hasCheckedSession.current = true;
-      if (!data.session) router.replace("/login");
+      // BARIS INI DIMATIKAN SEMENTARA AGAR TIDAK DILEMPAR KE LOGIN
+      // if (!data.session) router.replace("/login");
     };
 
     void loadSession();
@@ -51,7 +52,8 @@ export default function AccountPage() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
-      if (hasCheckedSession.current && !nextSession) router.replace("/login");
+      // BARIS INI DIMATIKAN SEMENTARA
+      // if (hasCheckedSession.current && !nextSession) router.replace("/login");
     });
 
     return () => {
@@ -64,11 +66,12 @@ export default function AccountPage() {
     setIsSigningOut(true);
     await supabase.auth.signOut();
     setIsSigningOut(false);
-    router.replace("/login");
+    // Kalau mau logout, tetap diarahin ke home atau biarin aja di halaman ini
+    router.replace("/");
   };
 
   const displayName = getDisplayName(session);
-  const email = session?.user.email ?? "-";
+  const email = session?.user.email ?? "Tamu belum login";
   const createdAt = formatDate(session?.user.created_at);
   const lastSignIn = formatDate(session?.user.last_sign_in_at ?? undefined);
 
@@ -96,14 +99,25 @@ export default function AccountPage() {
             Akun Saya
           </h1>
         </div>
-        <button
-          type="button"
-          onClick={() => void handleSignOut()}
-          disabled={isLoading || isSigningOut}
-          className="rounded-full bg-rose-50 text-rose-600 border border-rose-200 px-4 py-1.5 text-xs font-bold transition hover:bg-rose-100 active:scale-95 disabled:opacity-50"
-        >
-          {isSigningOut ? "Keluar..." : "Keluar Akun"}
-        </button>
+
+        {/* Tampilkan tombol login jika belum login, dan tombol logout jika sudah login */}
+        {session ? (
+          <button
+            type="button"
+            onClick={() => void handleSignOut()}
+            disabled={isLoading || isSigningOut}
+            className="rounded-full bg-rose-50 text-rose-600 border border-rose-200 px-4 py-1.5 text-xs font-bold transition hover:bg-rose-100 active:scale-95 disabled:opacity-50"
+          >
+            {isSigningOut ? "Keluar..." : "Keluar Akun"}
+          </button>
+        ) : (
+          <Link
+            href="/login"
+            className="rounded-full bg-sky-50 text-sky-600 border border-sky-200 px-4 py-1.5 text-xs font-bold transition hover:bg-sky-100 active:scale-95"
+          >
+            Login Sekarang
+          </Link>
+        )}
       </header>
 
       <div className="mx-auto w-full max-w-4xl px-4 md:px-8 pt-6 flex flex-col gap-6">
@@ -117,7 +131,7 @@ export default function AccountPage() {
               <div className="h-32 rounded-2xl bg-slate-200" />
             </div>
           </div>
-        ) : session ? (
+        ) : (
           <>
             {/* PROFILE CARD - Kombinasi Putih dan Pattern Halus */}
             <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 md:p-8 shadow-sm">
@@ -126,7 +140,6 @@ export default function AccountPage() {
               <div className="relative z-10 flex flex-col sm:flex-row gap-6 items-center sm:items-start text-center sm:text-left">
                 {/* Avatar */}
                 <div className="h-24 w-24 shrink-0 rounded-full border-4 border-white shadow-md bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-3xl font-black text-slate-400 overflow-hidden">
-                  {/* Bisa ganti src dicebear di bawah sesuai nama session kalau mau lebih dinamis */}
                   <img
                     src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${displayName}`}
                     alt="Avatar"
@@ -136,7 +149,7 @@ export default function AccountPage() {
 
                 <div className="flex-1 mt-2">
                   <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-rose-500 mb-1">
-                    Profil Pengguna
+                    {session ? "Profil Pengguna" : "Profil Tamu"}
                   </p>
                   <h2 className="text-3xl font-black tracking-tight text-slate-900">
                     {displayName}
@@ -144,9 +157,16 @@ export default function AccountPage() {
                   <p className="mt-1 text-sm font-medium text-slate-500">
                     {email}
                   </p>
-                  <span className="inline-block mt-3 px-2.5 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-bold uppercase tracking-widest rounded-md border border-emerald-100">
-                    Status: Aktif
-                  </span>
+
+                  {session ? (
+                    <span className="inline-block mt-3 px-2.5 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-bold uppercase tracking-widest rounded-md border border-emerald-100">
+                      Status: Aktif
+                    </span>
+                  ) : (
+                    <span className="inline-block mt-3 px-2.5 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-widest rounded-md border border-slate-200">
+                      Status: Belum Login
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -205,36 +225,28 @@ export default function AccountPage() {
                 <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col">
                   <span className="text-2xl mb-3">🚀</span>
                   <h3 className="text-base font-bold text-slate-900 tracking-tight">
-                    Siap Deploy
+                    Mode Tamu (Guest)
                   </h3>
                   <p className="mt-2 text-xs leading-relaxed text-slate-500">
-                    Halaman akun ini aman dipakai untuk cek sesi autentikasi
-                    secara live setelah aplikasi dinaikkan ke Vercel.
+                    Saat ini fitur redirect ke login dimatikan sementara. Kamu
+                    bisa bebas melihat tampilan dashboard tanpa harus
+                    autentikasi.
                   </p>
                 </div>
 
                 <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col">
                   <span className="text-2xl mb-3">🔒</span>
                   <h3 className="text-base font-bold text-slate-900 tracking-tight">
-                    Supabase Aktif
+                    Supabase Ready
                   </h3>
                   <p className="mt-2 text-xs leading-relaxed text-slate-500">
-                    Sesi login kamu sudah tersimpan di browser. Kamu nggak perlu
-                    masuk berulang kali saat berpindah halaman.
+                    Kalau kamu sudah login sungguhan nanti, profil ini akan
+                    terisi otomatis dengan data akun yang asli.
                   </p>
                 </div>
               </div>
             </section>
           </>
-        ) : (
-          <section className="flex flex-col items-center justify-center rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-sm min-h-[300px]">
-            <p className="text-lg font-bold text-slate-900 mb-1">
-              Mengalihkan ke halaman login...
-            </p>
-            <p className="text-sm font-medium text-slate-500 max-w-sm">
-              Sesi kamu belum ditemukan atau sudah kedaluwarsa. Tunggu sebentar.
-            </p>
-          </section>
         )}
       </div>
     </main>
