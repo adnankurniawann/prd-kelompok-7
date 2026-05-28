@@ -144,6 +144,22 @@ begin
   end if;
 end $$;
 
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'hygiene_reports'
+      and policyname = 'hygiene_reports_select_public'
+  ) then
+    create policy hygiene_reports_select_public
+      on hygiene_reports
+      for select
+      using (true);
+  end if;
+end $$;
+
 create table public.wallets (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users not null unique,

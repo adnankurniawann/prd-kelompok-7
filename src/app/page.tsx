@@ -1,6 +1,15 @@
-import Link from "next/link";
+import {
+  HygieneReportsFeed,
+  HygieneReportsFeedSkeleton,
+} from "@/components/home/hygiene-reports-feed";
+import {
+  RestaurantStatsCards,
+  RestaurantStatsSkeleton,
+} from "@/components/home/restaurant-stats";
+import WalletCard from "@/components/WalletCard";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import WalletCard from "@/components/WalletCard"; // <-- Import komponen dompetnya di sini
+import Link from "next/link";
+import { Suspense } from "react";
 
 // Halaman ini sekarang jadi Server Component, jadi bisa langsung baca session
 export default async function Home() {
@@ -99,23 +108,9 @@ export default async function Home() {
           {/* WIDGET SALDO DOMPET (Hanya dirender kalau user sudah login) */}
           {session && <WalletCard />}
 
-          <div className="grid grid-cols-3 gap-3 md:gap-4">
-            <div className="group bg-gradient-to-br from-indigo-500 to-blue-600 rounded-2xl p-4 text-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
-              <span className="text-2xl mb-1 block opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all origin-left">🏪</span>
-              <p className="text-[10px] uppercase font-medium tracking-widest text-indigo-100 mt-2">Restoran</p>
-              <p className="text-2xl md:text-3xl font-bold mt-0.5 text-white/95">21</p>
-            </div>
-            <div className="group bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-2xl p-4 text-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
-              <span className="text-2xl mb-1 block opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all origin-left">🛡️</span>
-              <p className="text-[10px] uppercase font-medium tracking-widest text-emerald-100 mt-2">Aman</p>
-              <p className="text-2xl md:text-3xl font-bold mt-0.5 text-white/95">14</p>
-            </div>
-            <div className="group bg-gradient-to-br from-rose-400 to-rose-500 rounded-2xl p-4 text-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
-              <span className="text-2xl mb-1 block opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all origin-left">⚠️</span>
-              <p className="text-[10px] uppercase font-medium tracking-widest text-rose-100 mt-2">Red Flag</p>
-              <p className="text-2xl md:text-3xl font-bold mt-0.5 text-white/95">7</p>
-            </div>
-          </div>
+          <Suspense fallback={<RestaurantStatsSkeleton />}>
+            <RestaurantStatsCards />
+          </Suspense>
 
           <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
             <h3 className="text-base font-semibold text-slate-800 mb-4 tracking-tight">Pilih Mode Gacha</h3>
@@ -151,30 +146,9 @@ export default async function Home() {
             </div>
           </Link>
 
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
-            <div className="px-5 py-4 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
-              <h3 className="text-sm font-semibold text-slate-800 tracking-tight">Laporan Higienitas</h3>
-              <Link href="/map" className="text-xs font-medium text-rose-500 hover:text-rose-600 transition-colors uppercase tracking-wider">Lihat Peta</Link>
-            </div>
-            <div className="flex flex-col">
-              <div className="px-5 py-4 border-b border-slate-50 flex gap-3.5 items-start hover:bg-slate-50/50 transition-colors cursor-pointer group">
-                <div className="w-9 h-9 rounded-xl bg-red-50 text-red-500 flex items-center justify-center shrink-0 text-sm transition-transform group-hover:scale-110 border border-red-100">⚠️</div>
-                <div className="flex-1">
-                  <h4 className="text-sm font-semibold text-slate-800 group-hover:text-red-600 transition-colors">Warteg X, Ciseke</h4>
-                  <p className="text-xs text-slate-500 mt-1 leading-relaxed font-normal">"Banyak lalat di etalase, ada 3 orang lapor sakit perut kemarin."</p>
-                  <p className="text-[10px] text-red-400 font-medium mt-2 uppercase tracking-wide">2 jam yang lalu</p>
-                </div>
-              </div>
-              <div className="px-5 py-4 flex gap-3.5 items-start hover:bg-slate-50/50 transition-colors cursor-pointer group">
-                <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center shrink-0 text-sm transition-transform group-hover:scale-110 border border-emerald-100">🛡️</div>
-                <div className="flex-1">
-                  <h4 className="text-sm font-semibold text-slate-800 group-hover:text-emerald-600 transition-colors">Ayam Geprek Pangeran</h4>
-                  <p className="text-xs text-slate-500 mt-1 leading-relaxed font-normal">Konsisten bersih 3 bulan berturut-turut. Rekomendasi aman.</p>
-                  <div className="mt-2 inline-block px-2 py-1 bg-emerald-50 text-emerald-600 rounded-md text-[9px] font-semibold uppercase tracking-widest border border-emerald-100">Verified</div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <Suspense fallback={<HygieneReportsFeedSkeleton />}>
+            <HygieneReportsFeed />
+          </Suspense>
 
           <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm mb-6">
             <h3 className="text-sm font-semibold text-slate-800 mb-4 tracking-tight">Cara Penggunaan</h3>
