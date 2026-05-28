@@ -70,8 +70,8 @@ function MapPageContent() {
   const [userLat, setUserLat] = useState(DEFAULT_LOCATION.lat);
   const [userLng, setUserLng] = useState(DEFAULT_LOCATION.lng);
   const [autoRefreshInterval, setAutoRefreshInterval] = useState<number | null>(
-    5000,
-  ); // 5 seconds
+    null,
+  );
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   const resolveSelectedRestaurant = useCallback(
@@ -255,8 +255,8 @@ function MapPageContent() {
 
       setReportMessage(
         reportType === "RED_FLAG"
-          ? "Report RED_FLAG terkirim dan skor higienitas diperbarui."
-          : "Report CLEAN terkirim dan skor higienitas naik jika valid.",
+          ? "Laporan Red Flag telah terkirim dan skor higienitas diperbarui."
+          : "Laporan Clean telah terkirim dan skor higienitas naik jika valid.",
       );
       setReportDescription("");
       await loadRestaurants();

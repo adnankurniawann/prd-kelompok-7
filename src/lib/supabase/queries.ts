@@ -44,6 +44,44 @@ interface EligibleRestaurantRecord {
   distance: number;
 }
 
+/** Aggregated counts for dashboard statistics (matches map hygiene_status rules). */
+export interface RestaurantStats {
+  total: number;
+  safe: number;
+  redFlag: number;
+}
+
+/** Recent hygiene report for homepage feed. */
+export interface RecentHygieneReport {
+  id: string;
+  report_type: "RED_FLAG" | "CLEAN";
+  description: string | null;
+  created_at: string;
+  restaurant_id: string;
+  restaurant_name: string;
+  is_verified_safe: boolean;
+}
+
+interface HygieneReportRow {
+  id: string;
+  report_type: string;
+  description: string | null;
+  created_at: string;
+  restaurant_id: string;
+  restaurants:
+    | {
+        id: string;
+        name: string;
+        is_verified_safe: boolean;
+      }
+    | {
+        id: string;
+        name: string;
+        is_verified_safe: boolean;
+      }[]
+    | null;
+}
+
 /** Restaurant with parsed coordinates and hygiene status (for /api/restaurants map). */
 export interface RestaurantWithCoords {
   id: string;
@@ -208,6 +246,117 @@ export function parsePostGISPoint(
 // ---------------------------------------------------------------------------
 // Query functions
 // ---------------------------------------------------------------------------
+
+/**
+ * Returns restaurant counts for the home dashboard.
+ * Safe / Red Flag use the same rule as map API: GREEN if hygiene_score >= 50.
+ */
+export async function getRestaurantStats(): Promise<RestaurantStats> {
+  const [totalResult, safeResult, redFlagResult] = await Promise.all([
+    supabase.from("restaurants").select("*", { count: "exact", head: true }),
+    supabase
+      .from("restaurants")
+      .select("*", { count: "exact", head: true })
+      .gte("hygiene_score", 50),
+    supabase
+      .from("restaurants")
+      .select("*", { count: "exact", head: true })
+      .lt("hygiene_score", 50),
+  ]);
+
+  if (totalResult.error) {
+    throw new Error(
+      `getRestaurantStats: failed to count restaurants. ` +
+        `Supabase error: ${totalResult.error.message} (code: ${totalResult.error.code})`,
+    );
+  }
+
+  if (safeResult.error) {
+    throw new Error(
+      `getRestaurantStats: failed to count safe restaurants. ` +
+        `Supabase error: ${safeResult.error.message} (code: ${safeResult.error.code})`,
+    );
+  }
+
+  if (redFlagResult.error) {
+    throw new Error(
+      `getRestaurantStats: failed to count red-flag restaurants. ` +
+        `Supabase error: ${redFlagResult.error.message} (code: ${redFlagResult.error.code})`,
+    );
+  }
+
+  return {
+    total: totalResult.count ?? 0,
+    safe: safeResult.count ?? 0,
+    redFlag: redFlagResult.count ?? 0,
+  };
+}
+
+/**
+ * Fetches the most recent hygiene reports with restaurant names for the homepage.
+ */
+export async function getRecentHygieneReports(
+  limit = 5,
+): Promise<RecentHygieneReport[]> {
+  const { data, error } = await supabase
+    .from("hygiene_reports")
+    .select(
+      `
+      id,
+      report_type,
+      description,
+      created_at,
+      restaurant_id,
+      restaurants (
+        id,
+        name,
+        is_verified_safe
+      )
+    `,
+    )
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(
+      `getRecentHygieneReports: failed to fetch reports. ` +
+        `Supabase error: ${error.message} (code: ${error.code})`,
+    );
+  }
+
+  const rows = (data ?? []) as HygieneReportRow[];
+
+  return rows
+    .map((row) => {
+      const restaurant = Array.isArray(row.restaurants)
+        ? row.restaurants[0]
+        : row.restaurants;
+
+      if (!restaurant) {
+        return null;
+      }
+
+      const reportType =
+        row.report_type === "RED_FLAG" || row.report_type === "CLEAN"
+          ? row.report_type
+          : null;
+
+      if (!reportType) {
+        return null;
+      }
+
+      return {
+        id: row.id,
+        report_type: reportType,
+        description: row.description,
+        created_at: row.created_at,
+        restaurant_id: row.restaurant_id,
+        restaurant_name: restaurant.name,
+        is_verified_safe: restaurant.is_verified_safe,
+      };
+    })
+    .filter((row): row is RecentHygieneReport => row !== null);
+}
 
 /**
  * Fetches all restaurants from the database and enriches each row with
