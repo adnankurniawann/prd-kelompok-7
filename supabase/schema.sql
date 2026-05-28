@@ -143,3 +143,23 @@ begin
       with check (true);
   end if;
 end $$;
+
+create table public.wallets (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users not null unique,
+  monthly_budget integer default 0,       -- Total budget yang diset untuk bulan ini
+  current_balance integer default 0,      -- Sisa saldo saat ini
+  last_updated timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Buka akses RLS (Row Level Security) supaya user cuma bisa akses dompetnya sendiri
+alter table public.wallets enable row level security;
+
+create policy "User can view own wallet" 
+  on public.wallets for select using (auth.uid() = user_id);
+
+create policy "User can update own wallet" 
+  on public.wallets for update using (auth.uid() = user_id);
+
+create policy "User can insert own wallet" 
+  on public.wallets for insert with check (auth.uid() = user_id);

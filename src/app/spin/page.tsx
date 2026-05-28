@@ -37,6 +37,8 @@ export default function SpinPage() {
   const [isSpinning, setIsSpinning] = useState(false);
   const [result, setResult] = useState<SpinResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [confirmMessage, setConfirmMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!navigator.geolocation) return;
@@ -79,6 +81,8 @@ export default function SpinPage() {
     setIsSpinning(true);
     setError(null);
     setResult(null);
+    setConfirmMessage(null); // Reset pesan konfirmasi setiap kali spin ulang
+
     const minSpinDelay = new Promise<void>((resolve) => {
       window.setTimeout(resolve, MIN_SPIN_DURATION_MS);
     });
@@ -110,6 +114,30 @@ export default function SpinPage() {
       setIsSpinning(false);
     }
   };
+  
+  const handleConfirmFood = async () => {
+    if (!result) return;
+    setIsConfirming(true);
+    setConfirmMessage(null);
+
+    try {
+      const res = await fetch("/api/wallet/deduct", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: result.price_tier }),
+      });
+
+      if (res.ok) {
+        setConfirmMessage("✅ Selamat makan! Saldo berhasil dipotong.");
+      } else {
+        setConfirmMessage("⚠️ Gagal memotong saldo.");
+      }
+    } catch (err) {
+      setConfirmMessage("⚠️ Terjadi kesalahan jaringan.");
+    } finally {
+      setIsConfirming(false);
+    }
+  };
 
   // Logika kalkulasi panjang warna untuk slider (Progress bar warna)
   const budgetPercent = ((budget - 10000) / (50000 - 10000)) * 100;
@@ -120,7 +148,7 @@ export default function SpinPage() {
       {/* Background Decor */}
       <div className="absolute top-0 inset-x-0 h-[500px] bg-gradient-to-b from-rose-100/50 via-slate-50 to-transparent z-0 pointer-events-none"></div>
 
-      {/* STICKY HEADER - Bersih & Rapi tanpa label aneh */}
+      {/* STICKY HEADER */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-200/60 px-4 md:px-8 py-3 shadow-sm flex items-center gap-3">
         <Link
           href="/"
@@ -271,7 +299,7 @@ export default function SpinPage() {
         {/* KOLOM KANAN: SPIN ACTION & RESULT */}
         <div className="lg:col-span-7 flex flex-col gap-6">
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 md:p-10 flex flex-col items-center justify-center relative overflow-hidden min-h-[360px]">
-            {/* Animasi Ring Cincin Muter PERSIS HTML (Pakai Motion.div untuk Wobble) */}
+            {/* Animasi Ring Cincin */}
             <motion.div
               key={isSpinning ? "spinning" : "idle"}
               className="absolute top-1/2 left-1/2 w-48 h-48 sm:w-56 sm:h-56 rounded-full border-4 border-dashed border-rose-200 pointer-events-none opacity-80"
@@ -279,8 +307,8 @@ export default function SpinPage() {
               animate={
                 isSpinning
                   ? {
-                      rotate: 1080, // Muter ngebut
-                      x: ["-50%", "-51%", "-49%", "-50%"], // Efek wobble (oleng)
+                      rotate: 1080,
+                      x: ["-50%", "-51%", "-49%", "-50%"],
                       y: ["-50%", "-49%", "-51%", "-50%"],
                     }
                   : {
@@ -300,7 +328,7 @@ export default function SpinPage() {
               }
             />
 
-            {/* Tombol Spin PERSIS HTML */}
+            {/* Tombol Spin */}
             <motion.button
               onClick={handleSpin}
               disabled={isSpinning}
@@ -312,7 +340,6 @@ export default function SpinPage() {
               }
               className="relative z-10 w-40 h-40 sm:w-44 sm:h-44 rounded-full bg-gradient-to-b from-rose-400 to-rose-600 shadow-xl shadow-rose-500/40 text-white font-bold text-2xl flex flex-col items-center justify-center border-4 border-white active:scale-95 transition-all disabled:opacity-90"
             >
-              {/* Ikon Alat Makan Muter saat Spin */}
               <motion.div
                 animate={isSpinning ? { rotate: 1080 } : { rotate: 0 }}
                 transition={
@@ -374,20 +401,44 @@ export default function SpinPage() {
                   </span>
                 </div>
 
-                <div className="mt-7 flex flex-col sm:flex-row gap-4">
-                  <Link
-                    href={`/map?restaurant_id=${encodeURIComponent(result.id)}`}
-                    className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-slate-800 py-3.5 text-sm font-semibold !text-white shadow-sm transition-all hover:bg-slate-900 active:scale-[0.98]"
-                  >
-                    <span className="text-base">📍</span> <span className="!text-white">Lihat di Peta</span>
-                  </Link>
-                  <button
-                    onClick={handleSpin}
-                    className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-3.5 text-sm font-semibold text-slate-600 transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700 active:scale-[0.98]"
-                  >
-                    <span className="text-base">🔄</span> Spin Ulang Takdir
-                  </button>
+                {/* BAGIAN TOMBOL YANG DIUPDATE */}
+                <div className="mt-7 flex flex-col gap-3">
+                  {confirmMessage ? (
+                    <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-semibold text-center shadow-sm">
+                      {confirmMessage}
+                    </div>
+                  ) : (
+                    <>
+                      {/* Tombol Konfirmasi Makan & Potong Saldo */}
+                      <button
+                        onClick={handleConfirmFood}
+                        disabled={isConfirming}
+                        className="w-full bg-rose-500 text-white py-3.5 rounded-xl text-center text-sm font-bold shadow-md shadow-rose-500/30 transition-all hover:bg-rose-600 active:scale-[0.98] disabled:opacity-70 flex justify-center items-center gap-2"
+                      >
+                        {isConfirming ? "Memproses..." : `🍽️ Konfirmasi Makan di Sini (- Rp ${result.price_tier.toLocaleString("id-ID")})`}
+                      </button>
+                      
+                      {/* Tombol Navigasi & Spin Ulang */}
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <Link
+                          href={`/map?restaurant_id=${encodeURIComponent(result.id)}`}
+                          className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-slate-800 py-3.5 text-sm font-semibold !text-white shadow-sm transition-all hover:bg-slate-900 active:scale-[0.98]"
+                        >
+                          <span className="text-base">📍</span>{" "}
+                          <span className="!text-white">Lihat di Peta</span>
+                        </Link>
+                        <button
+                          onClick={handleSpin}
+                          className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-3.5 text-sm font-semibold text-slate-600 transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700 active:scale-[0.98]"
+                        >
+                          <span className="text-base">🔄</span> Spin Ulang Takdir
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
+                {/* AKHIR BAGIAN TOMBOL YANG DIUPDATE */}
+
               </motion.div>
             ) : (
               <motion.div

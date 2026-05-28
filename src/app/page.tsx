@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import WalletCard from "@/components/WalletCard"; // <-- Import komponen dompetnya di sini
 
 // Halaman ini sekarang jadi Server Component, jadi bisa langsung baca session
 export default async function Home() {
@@ -83,29 +84,20 @@ export default async function Home() {
       <div className="mx-auto max-w-6xl w-full px-4 md:px-8 pt-6 flex flex-col md:flex-row gap-6 lg:gap-8">
         {/* KOLOM KIRI */}
         <div className="flex-1 flex flex-col gap-6">
+          
+          {/* WIDGET GREETING */}
           <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 text-white shadow-lg shadow-slate-900/10 relative overflow-hidden group">
             <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/5 rounded-full blur-3xl transition-transform duration-700 group-hover:scale-150"></div>
             <p className="text-sm font-normal text-slate-300 mb-1">
               Selamat datang kembali,
             </p>
-            <h2 className="text-2xl font-semibold mb-6 tracking-tight text-white/95">
+            <h2 className="text-2xl font-semibold tracking-tight text-white/95">
               Siap berburu makan siang?
             </h2>
-
-            <div className="flex items-center justify-between border-t border-white/10 pt-4">
-              <div>
-                <p className="text-[10px] font-medium uppercase tracking-widest text-slate-400 mb-1">
-                  Sisa Saldo Makan
-                </p>
-                <p className="text-xl font-semibold tracking-tight text-white/95">
-                  Rp 450.000
-                </p>
-              </div>
-              <div className="bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-medium text-emerald-400 border border-white/10 flex items-center gap-1">
-                <span className="text-base leading-none font-light">↘</span> Hemat 15%
-              </div>
-            </div>
           </div>
+
+          {/* WIDGET SALDO DOMPET (Hanya dirender kalau user sudah login) */}
+          {session && <WalletCard />}
 
           <div className="grid grid-cols-3 gap-3 md:gap-4">
             <div className="group bg-gradient-to-br from-indigo-500 to-blue-600 rounded-2xl p-4 text-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">

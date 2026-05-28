@@ -37,6 +37,10 @@ export default function BlindPage() {
     (typeof BLIND_PRESETS)[number] | null
   >(null);
   const [rollingPresetLabel, setRollingPresetLabel] = useState("--");
+  
+  // State tambahan untuk fitur potong saldo
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [confirmMessage, setConfirmMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isRolling) {
@@ -62,6 +66,8 @@ export default function BlindPage() {
     setIsRolling(true);
     setError(null);
     setResult(null);
+    setConfirmMessage(null); // Reset pesan konfirmasi setiap kali roll ulang
+
     const minRollDelay = new Promise<void>((resolve) => {
       window.setTimeout(resolve, MIN_ROLL_DURATION_MS);
     });
@@ -103,6 +109,31 @@ export default function BlindPage() {
       setError(nextError);
       setResult(nextResult);
       setIsRolling(false);
+    }
+  };
+
+  // Fungsi tambahan untuk memotong saldo wallet
+  const handleConfirmFood = async () => {
+    if (!result) return;
+    setIsConfirming(true);
+    setConfirmMessage(null);
+
+    try {
+      const res = await fetch("/api/wallet/deduct", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: result.price_tier }),
+      });
+
+      if (res.ok) {
+        setConfirmMessage("✅ Selamat makan! Saldo berhasil dipotong.");
+      } else {
+        setConfirmMessage("⚠️ Gagal memotong saldo.");
+      }
+    } catch (err) {
+      setConfirmMessage("⚠️ Terjadi kesalahan jaringan.");
+    } finally {
+      setIsConfirming(false);
     }
   };
 
@@ -283,21 +314,40 @@ export default function BlindPage() {
                   </div>
                 </div>
 
-                {/* Tombol Aksi - FIX WARNA PUTIH */}
-                <div className="mt-auto pt-8 flex flex-col sm:flex-row gap-4 relative z-10">
-                  <Link
-                    href={`/map?restaurant_id=${encodeURIComponent(result.id)}`}
-                    className="flex-1 flex items-center justify-center gap-2 bg-slate-900 py-4 rounded-xl text-sm font-semibold !text-white shadow-md transition-all hover:bg-slate-800 active:scale-[0.98]"
-                  >
-                    <span className="text-base">📍</span> <span className="!text-white">Lihat di Radar Peta</span>
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={runBlindSpin}
-                    className="flex-1 flex items-center justify-center gap-2 border-2 border-slate-200 bg-white py-4 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 active:scale-[0.98] hover:border-slate-300 transition-all"
-                  >
-                    <span className="text-base">🔄</span> Coba Acak Lagi
-                  </button>
+                {/* Tombol Aksi - DENGAN FITUR POTONG SALDO */}
+                <div className="mt-auto pt-8 flex flex-col gap-3 relative z-10">
+                  {confirmMessage ? (
+                    <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-semibold text-center shadow-sm">
+                      {confirmMessage}
+                    </div>
+                  ) : (
+                    <>
+                      {/* Tombol Konfirmasi Makan & Potong Saldo */}
+                      <button
+                        onClick={handleConfirmFood}
+                        disabled={isConfirming}
+                        className="w-full bg-rose-500 text-white py-4 rounded-xl text-center text-sm font-bold shadow-md shadow-rose-500/30 transition-all hover:bg-rose-600 active:scale-[0.98] disabled:opacity-70 flex justify-center items-center gap-2"
+                      >
+                        {isConfirming ? "Memproses..." : `🍽️ Konfirmasi Makan di Sini (- Rp ${result.price_tier.toLocaleString("id-ID")})`}
+                      </button>
+
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <Link
+                          href={`/map?restaurant_id=${encodeURIComponent(result.id)}`}
+                          className="flex-1 flex items-center justify-center gap-2 bg-slate-900 py-4 rounded-xl text-sm font-semibold !text-white shadow-md transition-all hover:bg-slate-800 active:scale-[0.98]"
+                        >
+                          <span className="text-base">📍</span> <span className="!text-white">Lihat di Radar Peta</span>
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={runBlindSpin}
+                          className="flex-1 flex items-center justify-center gap-2 border-2 border-slate-200 bg-white py-4 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 active:scale-[0.98] hover:border-slate-300 transition-all"
+                        >
+                          <span className="text-base">🔄</span> Coba Acak Lagi
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </motion.div>
             ) : (
