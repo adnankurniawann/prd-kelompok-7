@@ -417,9 +417,7 @@ export default function AccountPage() {
                         Ubah foto, nama, dan biodata
                       </h3>
                     </div>
-                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
-                      Supabase Auth
-                    </span>
+
                   </div>
 
                   <div className="mt-5 grid gap-4">
@@ -469,7 +467,7 @@ export default function AccountPage() {
                         className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 file:mr-4 file:rounded-full file:border-0 file:bg-rose-500 file:px-4 file:py-2 file:text-xs file:font-bold file:text-white hover:bg-slate-100"
                       />
                       <p className="text-xs text-slate-500">
-                        Pilih file gambar untuk diunggah ke Supabase Storage.
+                        Pilih file gambar untuk diunggah.
                         Kalau diisi, ini akan dipakai menggantikan URL di atas.
                       </p>
                     </label>
