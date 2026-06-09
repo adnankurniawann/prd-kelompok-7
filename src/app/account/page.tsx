@@ -112,8 +112,6 @@ export default function AccountPage() {
       setSession(data.session ?? null);
       setIsLoading(false);
       hasCheckedSession.current = true;
-      // BARIS INI DIMATIKAN SEMENTARA AGAR TIDAK DILEMPAR KE LOGIN
-      // if (!data.session) router.replace("/login");
     };
 
     void loadSession();
@@ -122,8 +120,6 @@ export default function AccountPage() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
-      // BARIS INI DIMATIKAN SEMENTARA
-      // if (hasCheckedSession.current && !nextSession) router.replace("/login");
     });
 
     return () => {
@@ -136,7 +132,6 @@ export default function AccountPage() {
     setIsSigningOut(true);
     await supabase.auth.signOut();
     setIsSigningOut(false);
-    // Kalau mau logout, tetap diarahin ke home atau biarin aja di halaman ini
     router.replace("/");
   };
 
@@ -223,6 +218,9 @@ export default function AccountPage() {
       setSavedAvatarUrl(avatarUrl || null);
       clearAvatarSelection();
       await handleRefreshSession();
+      
+      router.refresh();
+      
       setProfileMessage(
         avatarFile
           ? "Profil dan foto berhasil disimpan."
@@ -252,7 +250,6 @@ export default function AccountPage() {
     savedAvatarUrl ??
     (profileForm.avatarUrl.trim().length > 0 ? profileForm.avatarUrl.trim() : avatarUrl);
 
-  // Fallback initial untuk avatar kalau nama tidak ada
   const initials =
     displayName
       .split(/\s+/)
@@ -263,7 +260,6 @@ export default function AccountPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-20">
-      {/* HEADER - Clean Navigation */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-200/60 px-4 md:px-8 py-3 shadow-sm flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link
@@ -277,7 +273,6 @@ export default function AccountPage() {
           </h1>
         </div>
 
-        {/* Tampilkan tombol login jika belum login, dan tombol logout jika sudah login */}
         {session ? (
           <button
             type="button"
@@ -299,7 +294,6 @@ export default function AccountPage() {
 
       <div className="mx-auto w-full max-w-4xl px-4 md:px-8 pt-6 flex flex-col gap-6">
         {isLoading ? (
-          // Skeleton Loading State
           <div className="animate-pulse flex flex-col gap-6">
             <div className="h-40 rounded-3xl bg-slate-200" />
             <div className="grid gap-4 md:grid-cols-3">
@@ -310,12 +304,10 @@ export default function AccountPage() {
           </div>
         ) : (
           <>
-            {/* PROFILE CARD - Kombinasi Putih dan Pattern Halus */}
             <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 md:p-8 shadow-sm">
               <div className="absolute top-0 right-0 w-64 h-64 bg-rose-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4"></div>
 
               <div className="relative z-10 flex flex-col sm:flex-row gap-6 items-center sm:items-start text-center sm:text-left">
-                {/* Avatar */}
                 <div className="h-24 w-24 shrink-0 rounded-full border-4 border-white shadow-md bg-linear-to-br from-slate-100 to-slate-200 flex items-center justify-center text-3xl font-black text-slate-400 overflow-hidden">
                   <img
                     src={liveAvatarUrl}
@@ -352,7 +344,6 @@ export default function AccountPage() {
                 </div>
               </div>
 
-              {/* Stats Bar */}
               <div className="relative z-10 mt-8 grid grid-cols-2 gap-4 border-t border-slate-100 pt-6">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
@@ -373,9 +364,7 @@ export default function AccountPage() {
               </div>
             </section>
 
-            {/* QUICK ACTIONS & INFO GRID */}
             <section className="grid gap-6 md:grid-cols-[1fr_2fr]">
-              {/* Quick Actions */}
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-4">
                   Aksi Cepat
@@ -402,7 +391,6 @@ export default function AccountPage() {
                 </div>
               </div>
 
-              {/* Developer Info Cards */}
               <div className="grid gap-4">
                 <form
                   onSubmit={(e) => void handleSaveProfile(e)}

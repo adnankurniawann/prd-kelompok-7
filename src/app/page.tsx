@@ -11,19 +11,16 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { Suspense } from "react";
 
-// Halaman ini sekarang jadi Server Component, jadi bisa langsung baca session
 export default async function Home() {
-  // 1. Inisialisasi Supabase Server Client
   const supabase = await createSupabaseServerClient();
-  
-  // 2. Ambil session langsung dari server
   const { data: { session } } = await supabase.auth.getSession();
+
+  const metadata = session?.user?.user_metadata || {};
+  const displayName = metadata.full_name || metadata.name || session?.user?.email?.split("@")[0];
+  const avatarUrl = metadata.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(displayName || "User")}`;
 
   return (
     <main className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-20 selection:bg-rose-500 selection:text-white">
-      {/* ========================================= */}
-      {/* HEADER                                    */}
-      {/* ========================================= */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-200/60 px-4 md:px-8 py-3 shadow-sm flex items-center justify-between transition-all">
         <Link href="/" className="flex items-center gap-1">
           <h1 className="text-xl md:text-2xl font-black tracking-tight text-slate-900">
@@ -31,9 +28,7 @@ export default async function Home() {
           </h1>
         </Link>
 
-        {/* LOGIKA PROFIL: Cek apakah session ada atau tidak */}
         {session ? (
-          // JIKA SUDAH LOGIN -> Arahkan ke /account
           <Link
             href="/account"
             className="flex items-center gap-3 group cursor-pointer transition-transform active:scale-95"
@@ -43,20 +38,18 @@ export default async function Home() {
                 Mahasiswa ITB
               </p>
               <p className="text-sm font-semibold text-slate-700 group-hover:text-rose-500 transition-colors">
-                {/* Ambil bagian depan email sebagai nama sementara */}
-                {session.user.email?.split("@")[0]}
+                {displayName}
               </p>
             </div>
             <div className="h-9 w-9 rounded-full border-2 border-white shadow-sm overflow-hidden bg-slate-200 transition-transform group-hover:scale-105">
               <img
-                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.email}`}
+                src={avatarUrl}
                 alt="Profile"
                 className="w-full h-full object-cover"
               />
             </div>
           </Link>
         ) : (
-          // JIKA BELUM LOGIN -> Arahkan ke /login
           <Link
             href="/login"
             className="flex items-center gap-3 group cursor-pointer transition-transform active:scale-95"
@@ -87,14 +80,8 @@ export default async function Home() {
         )}
       </header>
 
-      {/* ========================================= */}
-      {/* MAIN CONTAINER                            */}
-      {/* ========================================= */}
       <div className="mx-auto max-w-6xl w-full px-4 md:px-8 pt-6 flex flex-col md:flex-row gap-6 lg:gap-8">
-        {/* KOLOM KIRI */}
         <div className="flex-1 flex flex-col gap-6">
-          
-          {/* WIDGET GREETING */}
           <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 text-white shadow-lg shadow-slate-900/10 relative overflow-hidden group">
             <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/5 rounded-full blur-3xl transition-transform duration-700 group-hover:scale-150"></div>
             <p className="text-sm font-normal text-slate-300 mb-1">
@@ -105,7 +92,6 @@ export default async function Home() {
             </h2>
           </div>
 
-          {/* WIDGET SALDO DOMPET (Hanya dirender kalau user sudah login) */}
           {session && <WalletCard />}
 
           <Suspense fallback={<RestaurantStatsSkeleton />}>
@@ -134,7 +120,6 @@ export default async function Home() {
           </div>
         </div>
 
-        {/* KOLOM KANAN */}
         <div className="w-full md:w-[340px] lg:w-[380px] flex flex-col gap-6 shrink-0">
           <Link href="/spin" className="group w-full bg-gradient-to-r from-rose-500 to-orange-500 text-white rounded-2xl p-5 flex items-center justify-between shadow-md shadow-rose-500/20 transition-all duration-300 hover:shadow-lg hover:shadow-rose-500/30 hover:-translate-y-0.5 active:scale-[0.98] active:translate-y-0 active:shadow-sm">
             <div>
