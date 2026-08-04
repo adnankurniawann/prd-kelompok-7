@@ -447,121 +447,94 @@ export async function getEligibleRestaurants(
   }));
 }
 
+/** Failure modes of `submitHygieneReport`, mapped from the database. */
+export type HygieneReportFailure =
+  | "RESTAURANT_NOT_FOUND"
+  | "COOLDOWN_ACTIVE"
+  | "INVALID_REPORT"
+  | "DATABASE_ERROR";
+
+/** Error carrying a `HygieneReportFailure` so the route can pick a status code. */
+export class HygieneReportError extends Error {
+  constructor(
+    readonly failure: HygieneReportFailure,
+    message: string,
+  ) {
+    super(message);
+    this.name = "HygieneReportError";
+  }
+}
+
 /**
- * Saves a hygiene report for a restaurant.
+ * Records a hygiene report and applies the resulting score change.
  *
- * Inserts a new row into the `hygiene_reports` table with `user_id` set to
- * `null` to support Guest Mode (no authentication required).
+ * Everything — the 24h per-IP cooldown, the insert, and the score update —
+ * happens inside the `submit_hygiene_report` database function, in one
+ * transaction. The client holds no write privilege on either table, so the
+ * rules cannot be skipped by calling PostgREST directly with the anon key.
+ *
+ * The reporter's IP is read from the request headers inside the function
+ * rather than passed in, so a caller cannot choose which IP it is throttled
+ * against through this API.
+ *
+ * Score rules (enforced in SQL):
+ *   - RED_FLAG: new_score = max(0, current - 50)
+ *   - CLEAN:    new_score = min(100, current + 20)
+ * Dropping below 50 clears `is_verified_safe`; climbing back above it does
+ * not restore the flag.
  *
  * @param restaurantId - UUID of the restaurant being reported
  * @param reportType   - Either `"RED_FLAG"` (dirty) or `"CLEAN"` (clean)
  * @param description  - Optional free-text description (max 1000 chars)
- * @throws {Error} If the Supabase insert fails for any reason
+ * @returns The restaurant row after the score update
+ * @throws {HygieneReportError} With a `failure` the caller can map to a status
  *
- * Requirements: 9.3, 5.6
+ * Requirements: 9.3, 9.4, 5.6, 6.1, 6.2, 6.3, 6.4
  */
-export async function saveHygieneReport(
+export async function submitHygieneReport(
   restaurantId: string,
   reportType: "RED_FLAG" | "CLEAN",
   description?: string,
-  reporterIp?: string
-): Promise<void> {
-  console.log(`[saveHygieneReport] Saving report for restaurant ${restaurantId}, type: ${reportType}`);
-  
-  const { error } = await supabase.from("hygiene_reports").insert({
-    user_id: null,
-    restaurant_id: restaurantId,
-    report_type: reportType,
-    description: description ?? null,
-    reporter_ip: reporterIp ?? null,
+): Promise<Restaurant> {
+  const { data, error } = await supabase.rpc("submit_hygiene_report", {
+    p_restaurant_id: restaurantId,
+    p_report_type: reportType,
+    p_description: description ?? null,
   });
 
   if (error) {
-    console.error(`[saveHygieneReport] Supabase error:`, error);
-    throw new Error(
-      `saveHygieneReport: failed to insert hygiene report for restaurant ` +
-        `"${restaurantId}". Supabase error: ${error.message} (code: ${error.code})`
-    );
-  }
-  
-  console.log(`[saveHygieneReport] Successfully saved report`);
-}
+    // The SQL function raises with PostgREST's PTxxx codes, which carry the
+    // intended HTTP status; `message` holds the machine-readable reason.
+    const failure: HygieneReportFailure =
+      error.message === "RESTAURANT_NOT_FOUND"
+        ? "RESTAURANT_NOT_FOUND"
+        : error.message === "COOLDOWN_ACTIVE"
+          ? "COOLDOWN_ACTIVE"
+          : error.message === "INVALID_REPORT_TYPE" ||
+              error.message === "DESCRIPTION_TOO_LONG"
+            ? "INVALID_REPORT"
+            : "DATABASE_ERROR";
 
-/**
- * Fetches the current hygiene score for a restaurant, computes the new score
- * based on the report type, updates the database, and returns the updated row.
- *
- * Score rules:
- *   - RED_FLAG: new_score = max(0, current_score - 50)
- *   - CLEAN:    new_score = min(100, current_score + 20)
- *
- * If the new score is < 50, `is_verified_safe` is set to `false`.
- * If the new score is >= 50 (only possible via CLEAN), `is_verified_safe` is
- * left unchanged (not automatically set to true — Requirement 6.4).
- *
- * @param restaurantId - UUID of the restaurant to update
- * @param reportType   - `'RED_FLAG'` or `'CLEAN'`
- * @returns The updated `Restaurant` row
- * @throws {Error} If the SELECT or UPDATE query fails
- *
- * Requirements: 9.4, 6.1, 6.2, 6.3, 6.4
- */
-export async function updateHygieneScore(
-  restaurantId: string,
-  reportType: "RED_FLAG" | "CLEAN"
-): Promise<Restaurant> {
-  // Step 1: Fetch current hygiene_score
-  console.log(`[updateHygieneScore] Fetching current score for restaurant ${restaurantId}`);
-  
-  const { data: selectData, error: selectError } = await supabase
-    .from("restaurants")
-    .select("hygiene_score")
-    .eq("id", restaurantId)
-    .single();
+    if (failure === "DATABASE_ERROR") {
+      console.error("[submitHygieneReport] Supabase error:", error);
+    }
 
-  if (selectError) {
-    console.error(`[updateHygieneScore] Select error:`, selectError);
-    throw new Error(
-      `updateHygieneScore: failed to fetch current hygiene_score for restaurant "${restaurantId}". ` +
-        `Supabase error: ${selectError.message} (code: ${selectError.code})`
+    throw new HygieneReportError(
+      failure,
+      `submitHygieneReport: report for restaurant "${restaurantId}" was ` +
+        `rejected — ${error.message} (code: ${error.code})`,
     );
   }
 
-  const currentScore: number = (selectData as { hygiene_score: number })
-    .hygiene_score;
+  // A function returning a composite type comes back as a single object.
+  const row = Array.isArray(data) ? data[0] : data;
 
-  // Step 2: Calculate new score
-  const newScore =
-    reportType === "RED_FLAG"
-      ? Math.max(0, currentScore - 50)
-      : Math.min(100, currentScore + 20);
-
-  console.log(`[updateHygieneScore] Current score: ${currentScore}, New score: ${newScore}`);
-
-  // Step 3: Build update payload — only set is_verified_safe when score drops below 50
-  const updatePayload: { hygiene_score: number; is_verified_safe?: boolean } = {
-    hygiene_score: newScore,
-    ...(newScore < 50 ? { is_verified_safe: false } : {}),
-  };
-
-  // Step 4: Update the row and return the updated data
-  console.log(`[updateHygieneScore] Updating restaurant with payload:`, updatePayload);
-  
-  const { data: updateData, error: updateError } = await supabase
-    .from("restaurants")
-    .update(updatePayload)
-    .eq("id", restaurantId)
-    .select()
-    .single();
-
-  if (updateError) {
-    console.error(`[updateHygieneScore] Update error:`, updateError);
-    throw new Error(
-      `updateHygieneScore: failed to update hygiene_score for restaurant "${restaurantId}". ` +
-        `Supabase error: ${updateError.message} (code: ${updateError.code})`
+  if (!row) {
+    throw new HygieneReportError(
+      "DATABASE_ERROR",
+      `submitHygieneReport: database returned no restaurant row for "${restaurantId}".`,
     );
   }
 
-  console.log(`[updateHygieneScore] Successfully updated score`);
-  return updateData as Restaurant;
+  return row as Restaurant;
 }

@@ -89,76 +89,18 @@ create table if not exists user_history (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 5. Row Level Security dan policy akses publik untuk aplikasi.
---    Aplikasi memakai anon key, jadi tabel yang dibaca / ditulis dari route
---    server-side perlu policy agar query tidak kembali kosong.
-alter table restaurants enable row level security;
-alter table hygiene_reports enable row level security;
-
-do $$
-begin
-  if not exists (
-    select 1
-    from pg_policies
-    where schemaname = 'public'
-      and tablename = 'restaurants'
-      and policyname = 'restaurants_select_public'
-  ) then
-    create policy restaurants_select_public
-      on restaurants
-      for select
-      using (true);
-  end if;
-end $$;
-
-do $$
-begin
-  if not exists (
-    select 1
-    from pg_policies
-    where schemaname = 'public'
-      and tablename = 'restaurants'
-      and policyname = 'restaurants_update_public'
-  ) then
-    create policy restaurants_update_public
-      on restaurants
-      for update
-      using (true)
-      with check (true);
-  end if;
-end $$;
-
-do $$
-begin
-  if not exists (
-    select 1
-    from pg_policies
-    where schemaname = 'public'
-      and tablename = 'hygiene_reports'
-      and policyname = 'hygiene_reports_insert_public'
-  ) then
-    create policy hygiene_reports_insert_public
-      on hygiene_reports
-      for insert
-      with check (true);
-  end if;
-end $$;
-
-do $$
-begin
-  if not exists (
-    select 1
-    from pg_policies
-    where schemaname = 'public'
-      and tablename = 'hygiene_reports'
-      and policyname = 'hygiene_reports_select_public'
-  ) then
-    create policy hygiene_reports_select_public
-      on hygiene_reports
-      for select
-      using (true);
-  end if;
-end $$;
+-- 5. Row Level Security
+--    Kebijakan RLS yang berlaku TIDAK lagi didefinisikan di sini. Semuanya
+--    pindah ke supabase/migrations/20260804000001_rls_hardening.sql, yang
+--    harus dijalankan setelah file ini.
+--
+--    File ini dulu memasang policy `restaurants_update_public` dengan
+--    using(true) — artinya siapa pun yang punya anon key (yaitu siapa pun yang
+--    membuka aplikasinya) bisa mengubah katalog restoran. Jangan dihidupkan
+--    lagi. Perubahan hygiene_score sekarang lewat submit_hygiene_report().
+--
+--    Setelah menjalankan schema.sql, WAJIB lanjut ke file migrasi tersebut,
+--    lalu buktikan dengan `node scripts/verify-rls.mjs`.
 
 create table public.wallets (
   id uuid default gen_random_uuid() primary key,
