@@ -11,6 +11,8 @@ type SpinResult = {
   price_tier: number;
   distance: number;
   hygiene_score: number;
+  /** `null` berarti jam bukanya belum terdata, bukan berarti tutup. */
+  is_open: boolean | null;
 };
 
 /**
@@ -21,6 +23,8 @@ type SpinResult = {
 type SpinSuggestions = {
   radius: number | null;
   budget: number | null;
+  /** Kandidatnya ada, tapi semuanya sedang tutup. */
+  includeClosed: boolean;
 };
 
 const DEFAULT_LOCATION = { lat: -6.9262, lng: 107.7717 };
@@ -58,6 +62,7 @@ export default function SpinPage() {
   const [result, setResult] = useState<SpinResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<SpinSuggestions | null>(null);
+  const [onlyOpen, setOnlyOpen] = useState(true);
   const [isConfirming, setIsConfirming] = useState(false);
   const [confirmMessage, setConfirmMessage] = useState<string | null>(null);
 
@@ -98,7 +103,11 @@ export default function SpinPage() {
     );
   };
 
-  const runSpin = async (spinBudget: number, spinRadius: number) => {
+  const runSpin = async (
+    spinBudget: number,
+    spinRadius: number,
+    spinOnlyOpen: boolean,
+  ) => {
     setIsSpinning(true);
     setError(null);
     setSuggestions(null);
@@ -122,6 +131,7 @@ export default function SpinPage() {
           radius: spinRadius,
           user_lat: lat,
           user_lng: lng,
+          only_open: spinOnlyOpen,
         }),
       });
       const payload = (await response.json()) as {
@@ -137,7 +147,8 @@ export default function SpinPage() {
         nextSuggestions =
           payload.suggestions &&
           (payload.suggestions.radius !== null ||
-            payload.suggestions.budget !== null)
+            payload.suggestions.budget !== null ||
+            payload.suggestions.includeClosed)
             ? payload.suggestions
             : null;
       } else {
@@ -154,7 +165,14 @@ export default function SpinPage() {
     }
   };
 
-  const handleSpin = () => runSpin(budget, radius);
+  const handleSpin = () => runSpin(budget, radius, onlyOpen);
+
+  const handleToggleOnlyOpen = (next: boolean) => {
+    setOnlyOpen(next);
+    // Hanya spin ulang kalau sudah pernah ada hasil atau error — kalau belum,
+    // mengubah filter sebelum spin pertama tidak seharusnya memicu apa pun.
+    if (result || error) void runSpin(budget, radius, next);
+  };
 
   // Saran hanya ditawarkan kalau setelah dijepit ke rentang slider nilainya
   // benar-benar berubah — kalau tidak, tombolnya cuma mengulang spin yang sama.
@@ -169,17 +187,23 @@ export default function SpinPage() {
 
   const canWidenRadius = suggestedRadius !== null && suggestedRadius > radius;
   const canRaiseBudget = suggestedBudget !== null && suggestedBudget > budget;
+  const canIncludeClosed = Boolean(suggestions?.includeClosed) && onlyOpen;
 
   const handleWidenRadius = () => {
     if (suggestedRadius === null) return;
     setRadius(suggestedRadius);
-    void runSpin(budget, suggestedRadius);
+    void runSpin(budget, suggestedRadius, onlyOpen);
   };
 
   const handleRaiseBudget = () => {
     if (suggestedBudget === null) return;
     setBudget(suggestedBudget);
-    void runSpin(suggestedBudget, radius);
+    void runSpin(suggestedBudget, radius, onlyOpen);
+  };
+
+  const handleIncludeClosed = () => {
+    setOnlyOpen(false);
+    void runSpin(budget, radius, false);
   };
   
   const handleConfirmFood = async () => {
@@ -325,6 +349,25 @@ export default function SpinPage() {
               </div>
             </div>
 
+            {/* Filter jam buka. Menyala secara default: mengirim orang ke
+                warung yang sudah tutup adalah cara tercepat kehilangan mereka. */}
+            <label className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 cursor-pointer">
+              <span>
+                <span className="block text-sm font-semibold text-slate-700">
+                  Cuma yang buka sekarang
+                </span>
+                <span className="block text-[11px] leading-snug text-slate-400">
+                  Yang jam bukanya belum terdata tetap ikut muncul
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                checked={onlyOpen}
+                onChange={(e) => handleToggleOnlyOpen(e.target.checked)}
+                className="h-5 w-5 shrink-0 accent-emerald-500 cursor-pointer"
+              />
+            </label>
+
             <div className="grid grid-cols-2 gap-3 pt-2">
               <div className="space-y-1.5 group">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide ml-1 group-hover:text-rose-500 transition-colors">
@@ -432,8 +475,18 @@ export default function SpinPage() {
                   ⚠️ {error}
                 </p>
 
-                {(canWidenRadius || canRaiseBudget) && (
+                {(canWidenRadius || canRaiseBudget || canIncludeClosed) && (
                   <div className="mt-3 flex flex-col gap-2">
+                    {canIncludeClosed && (
+                      <button
+                        type="button"
+                        onClick={handleIncludeClosed}
+                        disabled={isSpinning}
+                        className="w-full rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white transition-transform active:scale-95 hover:bg-amber-600 disabled:opacity-50"
+                      >
+                        Tampilkan yang lagi tutup juga
+                      </button>
+                    )}
                     {canWidenRadius && (
                       <button
                         type="button"
@@ -493,6 +546,23 @@ export default function SpinPage() {
                   <span className="px-3.5 py-1.5 bg-slate-100 rounded-lg text-xs font-semibold text-slate-700 border border-slate-100">
                     🛡️ Score: {result.hygiene_score}
                   </span>
+                  {/* Tiga keadaan, bukan dua: "belum terdata" tidak boleh
+                      menyamar jadi "buka". */}
+                  {result.is_open === true && (
+                    <span className="px-3.5 py-1.5 bg-emerald-50 rounded-lg text-xs font-semibold text-emerald-700 border border-emerald-200">
+                      🟢 Buka sekarang
+                    </span>
+                  )}
+                  {result.is_open === false && (
+                    <span className="px-3.5 py-1.5 bg-rose-50 rounded-lg text-xs font-semibold text-rose-700 border border-rose-200">
+                      🔴 Lagi tutup
+                    </span>
+                  )}
+                  {result.is_open === null && (
+                    <span className="px-3.5 py-1.5 bg-amber-50 rounded-lg text-xs font-semibold text-amber-700 border border-amber-200">
+                      ⏰ Jam buka belum terdata
+                    </span>
+                  )}
                 </div>
 
                 {/* BAGIAN TOMBOL YANG DIUPDATE */}

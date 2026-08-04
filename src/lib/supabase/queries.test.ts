@@ -63,6 +63,7 @@ describe("getEligibleRestaurants", () => {
           price_tier: 15000,
           hygiene_score: 90,
           distance: 123.6,
+          is_open: true,
         },
         {
           id: "22222222-2222-2222-2222-222222222222",
@@ -71,6 +72,7 @@ describe("getEligibleRestaurants", () => {
           price_tier: 12000,
           hygiene_score: 80,
           distance: 987.2,
+          is_open: null,
         },
       ],
       error: null,
@@ -83,6 +85,7 @@ describe("getEligibleRestaurants", () => {
       radius_meters: 1000,
       user_lat: -6.92,
       user_lng: 107.77,
+      only_open: true,
     });
     expect(result).toEqual([
       {
@@ -92,6 +95,7 @@ describe("getEligibleRestaurants", () => {
         price_tier: 15000,
         hygiene_score: 90,
         distance: 124,
+        is_open: true,
       },
       {
         id: "22222222-2222-2222-2222-222222222222",
@@ -100,8 +104,53 @@ describe("getEligibleRestaurants", () => {
         price_tier: 12000,
         hygiene_score: 80,
         distance: 987,
+        is_open: null,
       },
     ]);
+  });
+
+  it("meneruskan only_open dan mempertahankan tiga keadaan jam buka", async () => {
+    rpcMock.mockResolvedValue({
+      data: [
+        {
+          id: "33333333-3333-3333-3333-333333333333",
+          name: "Warung Malam",
+          category: "Nusantara",
+          price_tier: 12000,
+          hygiene_score: 70,
+          distance: 300,
+          is_open: false,
+        },
+      ],
+      error: null,
+    });
+
+    const result = await getEligibleRestaurants(20000, 1000, -6.92, 107.77, false);
+
+    expect(rpcMock).toHaveBeenCalledWith(
+      "get_eligible_restaurants",
+      expect.objectContaining({ only_open: false }),
+    );
+    expect(result[0].is_open).toBe(false);
+  });
+
+  it("menganggap is_open yang hilang sebagai belum terdata, bukan tutup", async () => {
+    rpcMock.mockResolvedValue({
+      data: [
+        {
+          id: "44444444-4444-4444-4444-444444444444",
+          name: "Warung Tanpa Jadwal",
+          category: null,
+          price_tier: 10000,
+          hygiene_score: 60,
+          distance: 100,
+        },
+      ],
+      error: null,
+    });
+
+    const [row] = await getEligibleRestaurants(20000, 1000, -6.92, 107.77);
+    expect(row.is_open).toBeNull();
   });
 
   it("returns an empty array when the RPC returns no candidates", async () => {

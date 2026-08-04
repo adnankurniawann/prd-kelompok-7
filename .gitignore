@@ -46,6 +46,10 @@ yarn-error.log*
 *.ods
 *.rtf
 
+# hasil ingest OSM — bisa dibuat ulang kapan saja dengan
+# `node scripts/ingest-osm.mjs`, dan ukurannya ikut jumlah tempat
+/supabase/generated/
+
 # vercel
 .vercel
 

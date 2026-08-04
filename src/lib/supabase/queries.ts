@@ -33,6 +33,15 @@ export interface RestaurantWithDistance {
   price_tier: number;
   hygiene_score: number;
   distance: number; // integer meters, rounded
+  /**
+   * `true` open, `false` closed, `null` opening hours not recorded yet.
+   *
+   * The third state is not an oversight. Most rows have no hours until Fase B
+   * curation finishes, and collapsing "unknown" into "closed" would empty the
+   * app today; collapsing it into "open" would silently send people to shut
+   * warungs. Keeping it distinct lets the UI say which one it is.
+   */
+  is_open: boolean | null;
 }
 
 interface EligibleRestaurantRecord {
@@ -42,6 +51,7 @@ interface EligibleRestaurantRecord {
   price_tier: number;
   hygiene_score: number;
   distance: number;
+  is_open: boolean | null;
 }
 
 /** Aggregated counts for dashboard statistics (matches map hygiene_status rules). */
@@ -411,6 +421,7 @@ export async function getAllRestaurants(): Promise<RestaurantWithCoords[]> {
  * @param radiusMeters - Maximum distance from user in meters (inclusive)
  * @param userLat      - User latitude in degrees [-90, 90]
  * @param userLng      - User longitude in degrees [-180, 180]
+ * @param onlyOpen     - Hide places known to be closed right now (default true)
  * @returns Array of restaurants with a rounded integer `distance` field
  * @throws {Error} If the Supabase query fails
  *
@@ -420,13 +431,15 @@ export async function getEligibleRestaurants(
   budget: number,
   radiusMeters: number,
   userLat: number,
-  userLng: number
+  userLng: number,
+  onlyOpen = true
 ): Promise<RestaurantWithDistance[]> {
   const { data, error } = await supabase.rpc("get_eligible_restaurants", {
     budget,
     radius_meters: radiusMeters,
     user_lat: userLat,
     user_lng: userLng,
+    only_open: onlyOpen,
   });
 
   if (error) {
@@ -444,6 +457,7 @@ export async function getEligibleRestaurants(
     price_tier: row.price_tier,
     hygiene_score: row.hygiene_score,
     distance: Math.round(row.distance),
+    is_open: row.is_open ?? null,
   }));
 }
 

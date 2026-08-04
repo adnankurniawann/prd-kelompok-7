@@ -53,6 +53,7 @@ describe("POST /api/spin", () => {
         price_tier: 15000,
         hygiene_score: 90,
         distance: 123,
+        is_open: true,
       },
     ]);
     calculateSpinWeightsMock.mockReturnValue([5000]);
@@ -63,6 +64,7 @@ describe("POST /api/spin", () => {
       price_tier: 15000,
       hygiene_score: 90,
       distance: 123,
+      is_open: true,
     });
 
     const response = await POST(spinRequest(VALID_BODY));
@@ -76,7 +78,49 @@ describe("POST /api/spin", () => {
         price_tier: 15000,
         distance: 123,
         hygiene_score: 90,
+        is_open: true,
       },
+    });
+  });
+
+  it("defaults to hiding places that are closed right now", async () => {
+    getEligibleRestaurantsMock.mockResolvedValue([]);
+
+    await POST(spinRequest(VALID_BODY));
+
+    expect(getEligibleRestaurantsMock).toHaveBeenNthCalledWith(
+      1,
+      20000,
+      1000,
+      -6.92,
+      107.77,
+      true,
+    );
+  });
+
+  it("passes only_open through when the caller turns the filter off", async () => {
+    getEligibleRestaurantsMock.mockResolvedValue([]);
+
+    await POST(spinRequest({ ...VALID_BODY, only_open: false }));
+
+    expect(getEligibleRestaurantsMock).toHaveBeenNthCalledWith(
+      1,
+      20000,
+      1000,
+      -6.92,
+      107.77,
+      false,
+    );
+  });
+
+  it("rejects a non-boolean only_open", async () => {
+    const response = await POST(
+      spinRequest({ ...VALID_BODY, only_open: "yes" }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      code: "INVALID_INPUT",
     });
   });
 
@@ -88,7 +132,39 @@ describe("POST /api/spin", () => {
     expect(response.status).toBe(404);
     await expect(response.json()).resolves.toMatchObject({
       code: "NO_ELIGIBLE_RESTAURANTS",
-      suggestions: { radius: null, budget: null },
+      suggestions: { radius: null, budget: null, includeClosed: false },
+    });
+  });
+
+  it("offers to include closed places when that is the only thing in the way", async () => {
+    const candidate = {
+      id: "33333333-3333-3333-3333-333333333333",
+      name: "Warung Malam",
+      category: "Nusantara",
+      price_tier: 12000,
+      hygiene_score: 70,
+      distance: 300,
+      is_open: false,
+    };
+
+    // Kandidatnya ada dan terjangkau; satu-satunya yang menyaringnya habis
+    // adalah filter jam buka.
+    getEligibleRestaurantsMock.mockImplementation(
+      async (
+        _budget: number,
+        _radius: number,
+        _lat: number,
+        _lng: number,
+        onlyOpen: boolean,
+      ) => (onlyOpen ? [] : [candidate]),
+    );
+
+    const response = await POST(spinRequest(VALID_BODY));
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toMatchObject({
+      message: "Warungnya ada, tapi semuanya lagi tutup jam segini.",
+      suggestions: { includeClosed: true },
     });
   });
 
