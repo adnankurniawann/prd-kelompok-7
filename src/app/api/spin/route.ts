@@ -55,9 +55,16 @@ function isValidFloat(value: unknown, min: number, max: number): boolean {
 // Route Handler
 // ---------------------------------------------------------------------------
 
+interface EmptyResultDiagnosis {
+  widerRadius: number | null;
+  higherBudget: number | null;
+  /** True kalau kandidatnya ada, tapi semuanya sedang tutup. */
+  closedForNow: boolean;
+}
+
 /**
- * Cari tahu apa yang sebenarnya membuat kandidat kosong: jaraknya atau
- * harganya. Dua probe ini hanya jalan di jalur gagal, dan hasilnya dipakai
+ * Cari tahu apa yang sebenarnya membuat kandidat kosong: jaraknya, harganya,
+ * atau jam bukanya. Probe ini hanya jalan di jalur gagal, dan hasilnya dipakai
  * untuk memberi saran yang benar — bukan menebak "coba perbesar radius" pada
  * kasus yang radiusnya sudah cukup luas sejak awal.
  */
@@ -66,16 +73,20 @@ async function diagnoseEmptyResult(
   radius: number,
   lat: number,
   lng: number,
-): Promise<{ widerRadius: number | null; higherBudget: number | null }> {
+  onlyOpen: boolean,
+): Promise<EmptyResultDiagnosis> {
   const widerRadius = Math.min(MAX_RADIUS, radius * 3);
   const higherBudget = Math.min(MAX_BUDGET, Math.max(budget * 2, budget + 15_000));
 
-  const [byRadius, byBudget] = await Promise.allSettled([
+  const [byRadius, byBudget, byHours] = await Promise.allSettled([
     widerRadius > radius
-      ? getEligibleRestaurants(budget, widerRadius, lat, lng)
+      ? getEligibleRestaurants(budget, widerRadius, lat, lng, onlyOpen)
       : Promise.resolve([]),
     higherBudget > budget
-      ? getEligibleRestaurants(higherBudget, radius, lat, lng)
+      ? getEligibleRestaurants(higherBudget, radius, lat, lng, onlyOpen)
+      : Promise.resolve([]),
+    onlyOpen
+      ? getEligibleRestaurants(budget, radius, lat, lng, false)
       : Promise.resolve([]),
   ]);
 
@@ -85,6 +96,7 @@ async function diagnoseEmptyResult(
   return {
     widerRadius: helped(byRadius) ? widerRadius : null,
     higherBudget: helped(byBudget) ? higherBudget : null,
+    closedForNow: helped(byHours),
   };
 }
 
@@ -199,11 +211,28 @@ export async function POST(request: Request): Promise<Response> {
       );
     }
 
+    // ------------------------------------------------------------------
+    // 3a. only_open — opsional. Default true: merekomendasikan tempat yang
+    //     sudah tutup adalah cara tercepat kehilangan kepercayaan orang.
+    // ------------------------------------------------------------------
+    const { only_open } = params;
+
+    if (only_open !== undefined && typeof only_open !== "boolean") {
+      return Response.json(
+        {
+          error: 'Parameter "only_open" must be a boolean.',
+          code: "INVALID_INPUT",
+        },
+        { status: 400 }
+      );
+    }
+
     // All params are now validated — cast to their concrete types.
     const budgetNum = budget as number;
     const radiusNum = radius as number;
     const userLat = user_lat as number;
     const userLng = user_lng as number;
+    const onlyOpen = only_open ?? true;
 
     // ------------------------------------------------------------------
     // 4. Fetch eligible restaurants (hygiene >= 50, price_tier <= budget,
@@ -215,7 +244,8 @@ export async function POST(request: Request): Promise<Response> {
         budgetNum,
         radiusNum,
         userLat,
-        userLng
+        userLng,
+        onlyOpen
       );
     } catch (dbError) {
       // Errors thrown by getEligibleRestaurants are DB errors.
@@ -236,13 +266,18 @@ export async function POST(request: Request): Promise<Response> {
     //    yang sudah dipastikan berhasil, bukan saran asal.
     // ------------------------------------------------------------------
     if (candidates.length === 0) {
-      let diagnosis = { widerRadius: null as number | null, higherBudget: null as number | null };
+      let diagnosis: EmptyResultDiagnosis = {
+        widerRadius: null,
+        higherBudget: null,
+        closedForNow: false,
+      };
       try {
         diagnosis = await diagnoseEmptyResult(
           budgetNum,
           radiusNum,
           userLat,
           userLng,
+          onlyOpen,
         );
       } catch (diagnosisError) {
         // Diagnosa hanya nilai tambah; kegagalannya tidak boleh mengubah
@@ -255,11 +290,16 @@ export async function POST(request: Request): Promise<Response> {
         );
       }
 
-      const message = diagnosis.widerRadius
-        ? `Belum ada warung dalam ${radiusNum} m. Ada yang cocok kalau radiusnya dilebarkan.`
-        : diagnosis.higherBudget
-          ? `Belum ada warung dengan budget Rp${budgetNum.toLocaleString("id-ID")}. Ada yang cocok kalau budgetnya dinaikkan.`
-          : "Belum ada warung yang terdata di sekitar sini. Coba geser lokasi atau bantu tambahkan warungnya.";
+      // Urutan saran mengikuti seberapa kecil pengorbanannya bagi pengguna:
+      // menunggu jam buka yang salah lebih murah daripada jalan lebih jauh,
+      // dan jalan lebih jauh lebih murah daripada membayar lebih mahal.
+      const message = diagnosis.closedForNow
+        ? "Warungnya ada, tapi semuanya lagi tutup jam segini."
+        : diagnosis.widerRadius
+          ? `Belum ada warung dalam ${radiusNum} m. Ada yang cocok kalau radiusnya dilebarkan.`
+          : diagnosis.higherBudget
+            ? `Belum ada warung dengan budget Rp${budgetNum.toLocaleString("id-ID")}. Ada yang cocok kalau budgetnya dinaikkan.`
+            : "Belum ada warung yang terdata di sekitar sini. Coba geser lokasi atau bantu tambahkan warungnya.";
 
       return Response.json(
         {
@@ -270,6 +310,7 @@ export async function POST(request: Request): Promise<Response> {
           suggestions: {
             radius: diagnosis.widerRadius,
             budget: diagnosis.higherBudget,
+            includeClosed: diagnosis.closedForNow,
           },
         },
         { status: 404, headers: rateLimitHeaders(limit, RATE_LIMIT) }
@@ -298,6 +339,7 @@ export async function POST(request: Request): Promise<Response> {
           price_tier: selected.price_tier,
           distance: selected.distance,
           hygiene_score: selected.hygiene_score,
+          is_open: selected.is_open,
         },
       },
       { status: 200, headers: rateLimitHeaders(limit, RATE_LIMIT) }
