@@ -13,8 +13,28 @@ type SpinResult = {
   hygiene_score: number;
 };
 
+/**
+ * Saran yang dikirim /api/spin saat tidak ada kandidat. Nilainya sudah
+ * diverifikasi server (radius/budget itu memang menghasilkan kandidat), jadi
+ * tombolnya aman ditawarkan — bukan tebakan yang berujung gagal lagi.
+ */
+type SpinSuggestions = {
+  radius: number | null;
+  budget: number | null;
+};
+
 const DEFAULT_LOCATION = { lat: -6.9262, lng: 107.7717 };
 const MIN_SPIN_DURATION_MS = 1300;
+
+// Batas slider. Saran dari server dijepit ke rentang ini supaya nilai yang
+// dipakai untuk spin selalu sama dengan yang terlihat di slider.
+const BUDGET_MIN = 10000;
+const BUDGET_MAX = 50000;
+const RADIUS_MIN = 500;
+const RADIUS_MAX = 5000;
+
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, value));
 
 function formatMeters(value: number): string {
   return value >= 1000
@@ -37,6 +57,7 @@ export default function SpinPage() {
   const [isSpinning, setIsSpinning] = useState(false);
   const [result, setResult] = useState<SpinResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<SpinSuggestions | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
   const [confirmMessage, setConfirmMessage] = useState<string | null>(null);
 
@@ -77,9 +98,10 @@ export default function SpinPage() {
     );
   };
 
-  const handleSpin = async () => {
+  const runSpin = async (spinBudget: number, spinRadius: number) => {
     setIsSpinning(true);
     setError(null);
+    setSuggestions(null);
     setResult(null);
     setConfirmMessage(null); // Reset pesan konfirmasi setiap kali spin ulang
 
@@ -89,30 +111,75 @@ export default function SpinPage() {
 
     let nextResult: SpinResult | null = null;
     let nextError: string | null = null;
+    let nextSuggestions: SpinSuggestions | null = null;
 
     try {
       const response = await fetch("/api/spin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ budget, radius, user_lat: lat, user_lng: lng }),
+        body: JSON.stringify({
+          budget: spinBudget,
+          radius: spinRadius,
+          user_lat: lat,
+          user_lng: lng,
+        }),
       });
       const payload = (await response.json()) as {
         data?: SpinResult;
         error?: string;
+        message?: string;
+        suggestions?: SpinSuggestions;
       };
       if (!response.ok) {
-        nextError = payload.error ?? "Spin gagal dijalankan.";
+        // `message` sudah ramah dan berbahasa Indonesia; `error` adalah teks
+        // teknis yang hanya berguna kalau message tidak ada.
+        nextError = payload.message ?? payload.error ?? "Spin gagal dijalankan.";
+        nextSuggestions =
+          payload.suggestions &&
+          (payload.suggestions.radius !== null ||
+            payload.suggestions.budget !== null)
+            ? payload.suggestions
+            : null;
       } else {
         nextResult = payload.data ?? null;
       }
     } catch {
-      nextError = "Tidak bisa menjangkau API spin.";
+      nextError = "Tidak bisa menjangkau API spin. Cek koneksi kamu ya.";
     } finally {
       await minSpinDelay;
       setError(nextError);
+      setSuggestions(nextSuggestions);
       setResult(nextResult);
       setIsSpinning(false);
     }
+  };
+
+  const handleSpin = () => runSpin(budget, radius);
+
+  // Saran hanya ditawarkan kalau setelah dijepit ke rentang slider nilainya
+  // benar-benar berubah — kalau tidak, tombolnya cuma mengulang spin yang sama.
+  const suggestedRadius =
+    suggestions?.radius != null
+      ? clamp(suggestions.radius, RADIUS_MIN, RADIUS_MAX)
+      : null;
+  const suggestedBudget =
+    suggestions?.budget != null
+      ? clamp(suggestions.budget, BUDGET_MIN, BUDGET_MAX)
+      : null;
+
+  const canWidenRadius = suggestedRadius !== null && suggestedRadius > radius;
+  const canRaiseBudget = suggestedBudget !== null && suggestedBudget > budget;
+
+  const handleWidenRadius = () => {
+    if (suggestedRadius === null) return;
+    setRadius(suggestedRadius);
+    void runSpin(budget, suggestedRadius);
+  };
+
+  const handleRaiseBudget = () => {
+    if (suggestedBudget === null) return;
+    setBudget(suggestedBudget);
+    void runSpin(suggestedBudget, radius);
   };
   
   const handleConfirmFood = async () => {
@@ -140,8 +207,8 @@ export default function SpinPage() {
   };
 
   // Logika kalkulasi panjang warna untuk slider (Progress bar warna)
-  const budgetPercent = ((budget - 10000) / (50000 - 10000)) * 100;
-  const radiusPercent = ((radius - 500) / (5000 - 500)) * 100;
+  const budgetPercent = ((budget - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100;
+  const radiusPercent = ((radius - RADIUS_MIN) / (RADIUS_MAX - RADIUS_MIN)) * 100;
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-slate-50 font-sans text-slate-900 pb-16 selection:bg-rose-500 selection:text-white">
@@ -213,8 +280,8 @@ export default function SpinPage() {
                 ></div>
                 <input
                   type="range"
-                  min="10000"
-                  max="50000"
+                  min={BUDGET_MIN}
+                  max={BUDGET_MAX}
                   step="1000"
                   value={budget}
                   onChange={(e) => setBudget(Number(e.target.value))}
@@ -244,8 +311,8 @@ export default function SpinPage() {
                 ></div>
                 <input
                   type="range"
-                  min="500"
-                  max="5000"
+                  min={RADIUS_MIN}
+                  max={RADIUS_MAX}
                   step="250"
                   value={radius}
                   onChange={(e) => setRadius(Number(e.target.value))}
@@ -358,11 +425,38 @@ export default function SpinPage() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
+                role="status"
                 className="mt-8 w-full max-w-sm p-4 bg-rose-50 border border-rose-100 rounded-xl text-center shadow-sm"
               >
                 <p className="text-sm font-semibold text-rose-600 leading-snug">
                   ⚠️ {error}
                 </p>
+
+                {(canWidenRadius || canRaiseBudget) && (
+                  <div className="mt-3 flex flex-col gap-2">
+                    {canWidenRadius && (
+                      <button
+                        type="button"
+                        onClick={handleWidenRadius}
+                        disabled={isSpinning}
+                        className="w-full rounded-lg bg-sky-500 px-4 py-2.5 text-sm font-semibold text-white transition-transform active:scale-95 hover:bg-sky-600 disabled:opacity-50"
+                      >
+                        Lebarkan radius jadi {suggestedRadius} m
+                      </button>
+                    )}
+                    {canRaiseBudget && (
+                      <button
+                        type="button"
+                        onClick={handleRaiseBudget}
+                        disabled={isSpinning}
+                        className="w-full rounded-lg border border-rose-200 bg-white px-4 py-2.5 text-sm font-semibold text-rose-600 transition-transform active:scale-95 hover:bg-rose-100 disabled:opacity-50"
+                      >
+                        Naikkan budget jadi Rp
+                        {suggestedBudget?.toLocaleString("id-ID")}
+                      </button>
+                    )}
+                  </div>
+                )}
               </motion.div>
             )}
           </div>
