@@ -16,9 +16,9 @@ import {
   formatToPostGISPoint,
   getAllRestaurants,
   getEligibleRestaurants,
+  HygieneReportError,
   parsePostGISPoint,
-  saveHygieneReport,
-  updateHygieneScore,
+  submitHygieneReport,
 } from "@/lib/supabase/queries";
 
 describe("PostGIS helpers", () => {
@@ -166,66 +166,83 @@ describe("getAllRestaurants", () => {
   });
 });
 
-describe("saveHygieneReport", () => {
+describe("submitHygieneReport", () => {
+  const RESTAURANT_ID = "11111111-1111-1111-1111-111111111111";
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("inserts a guest report with a null user id", async () => {
-    const insertMock = vi.fn().mockResolvedValue({ error: null });
-    fromMock.mockReturnValue({ insert: insertMock });
+  it("delegates the whole write to the database function", async () => {
+    const updatedRestaurant = {
+      id: RESTAURANT_ID,
+      name: "Ayam Geprek",
+      category: "Ayam",
+      price_tier: 15000,
+      location: "POINT(107.77 -6.92)",
+      hygiene_score: 40,
+      is_verified_safe: false,
+      created_at: "2026-05-10T00:00:00Z",
+    };
+    rpcMock.mockResolvedValue({ data: updatedRestaurant, error: null });
 
     await expect(
-      saveHygieneReport(
-        "11111111-1111-1111-1111-111111111111",
-        "RED_FLAG",
-        "Banyak lalat"
-      )
-    ).resolves.toBeUndefined();
-
-    expect(insertMock).toHaveBeenCalledWith({
-      user_id: null,
-      restaurant_id: "11111111-1111-1111-1111-111111111111",
-      report_type: "RED_FLAG",
-      description: "Banyak lalat",
-    });
-  });
-});
-
-describe("updateHygieneScore", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("reduces score and marks the restaurant unsafe for red flags", async () => {
-    const selectSingleMock = vi.fn().mockResolvedValue({
-      data: { hygiene_score: 90 },
-      error: null,
-    });
-    const selectEqMock = vi.fn().mockReturnValue({ single: selectSingleMock });
-    const selectMock = vi.fn().mockReturnValue({ eq: selectEqMock });
-
-    const updateSingleMock = vi.fn().mockResolvedValue({
-      data: {
-        id: "11111111-1111-1111-1111-111111111111",
-        name: "Ayam Geprek",
-        category: "Ayam",
-        price_tier: 15000,
-        location: "POINT(107.77 -6.92)",
-        hygiene_score: 40,
-        is_verified_safe: false,
-        created_at: "2026-05-10T00:00:00Z",
-      },
-      error: null,
-    });
-    const updateSelectMock = vi.fn().mockReturnValue({ single: updateSingleMock });
-    const updateEqMock = vi.fn().mockReturnValue({ select: updateSelectMock });
-    const updateMock = vi.fn().mockReturnValue({ eq: updateEqMock });
-
-    fromMock.mockReturnValue({ select: selectMock, update: updateMock });
-
-    await expect(
-      updateHygieneScore("11111111-1111-1111-1111-111111111111", "RED_FLAG")
+      submitHygieneReport(RESTAURANT_ID, "RED_FLAG", "Banyak lalat"),
     ).resolves.toMatchObject({ hygiene_score: 40, is_verified_safe: false });
+
+    expect(rpcMock).toHaveBeenCalledWith("submit_hygiene_report", {
+      p_restaurant_id: RESTAURANT_ID,
+      p_report_type: "RED_FLAG",
+      p_description: "Banyak lalat",
+    });
+    // Tidak ada penulisan langsung ke tabel: klien memang tidak punya haknya.
+    expect(fromMock).not.toHaveBeenCalled();
+  });
+
+  it("sends a null description when none is given", async () => {
+    rpcMock.mockResolvedValue({ data: { id: RESTAURANT_ID }, error: null });
+
+    await submitHygieneReport(RESTAURANT_ID, "CLEAN");
+
+    expect(rpcMock).toHaveBeenCalledWith(
+      "submit_hygiene_report",
+      expect.objectContaining({ p_description: null }),
+    );
+  });
+
+  it("unwraps a composite result returned as an array", async () => {
+    rpcMock.mockResolvedValue({
+      data: [{ id: RESTAURANT_ID, hygiene_score: 60 }],
+      error: null,
+    });
+
+    await expect(
+      submitHygieneReport(RESTAURANT_ID, "CLEAN"),
+    ).resolves.toMatchObject({ hygiene_score: 60 });
+  });
+
+  it.each([
+    ["RESTAURANT_NOT_FOUND", "RESTAURANT_NOT_FOUND"],
+    ["COOLDOWN_ACTIVE", "COOLDOWN_ACTIVE"],
+    ["INVALID_REPORT_TYPE", "INVALID_REPORT"],
+    ["DESCRIPTION_TOO_LONG", "INVALID_REPORT"],
+    ["connection reset by peer", "DATABASE_ERROR"],
+  ])("maps database message %s to failure %s", async (message, failure) => {
+    rpcMock.mockResolvedValue({
+      data: null,
+      error: { message, code: "PT400" },
+    });
+
+    await expect(
+      submitHygieneReport(RESTAURANT_ID, "RED_FLAG"),
+    ).rejects.toMatchObject({ failure });
+  });
+
+  it("fails loudly when the function returns nothing", async () => {
+    rpcMock.mockResolvedValue({ data: null, error: null });
+
+    await expect(
+      submitHygieneReport(RESTAURANT_ID, "CLEAN"),
+    ).rejects.toBeInstanceOf(HygieneReportError);
   });
 });

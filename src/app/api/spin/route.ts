@@ -10,6 +10,23 @@
 
 import { getEligibleRestaurants } from "@/lib/supabase/queries";
 import { calculateSpinWeights, weightedRandom } from "@/utils/gacha";
+import { clientIp, rateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+/**
+ * Setiap spin memicu query PostGIS. Tanpa batas ini satu skrip bisa
+ * menghabiskan kuota Supabase dalam semalam. 30 spin per menit jauh di atas
+ * pemakaian manusia yang paling gelisah sekalipun.
+ */
+const RATE_LIMIT = 30;
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+
+/** Batas atas parameter, dipakai juga saat menghitung saran radius/budget. */
+const MAX_BUDGET = 100_000_000;
+const MAX_RADIUS = 50_000;
 
 // ---------------------------------------------------------------------------
 // Input validation helpers
@@ -38,8 +55,61 @@ function isValidFloat(value: unknown, min: number, max: number): boolean {
 // Route Handler
 // ---------------------------------------------------------------------------
 
+/**
+ * Cari tahu apa yang sebenarnya membuat kandidat kosong: jaraknya atau
+ * harganya. Dua probe ini hanya jalan di jalur gagal, dan hasilnya dipakai
+ * untuk memberi saran yang benar — bukan menebak "coba perbesar radius" pada
+ * kasus yang radiusnya sudah cukup luas sejak awal.
+ */
+async function diagnoseEmptyResult(
+  budget: number,
+  radius: number,
+  lat: number,
+  lng: number,
+): Promise<{ widerRadius: number | null; higherBudget: number | null }> {
+  const widerRadius = Math.min(MAX_RADIUS, radius * 3);
+  const higherBudget = Math.min(MAX_BUDGET, Math.max(budget * 2, budget + 15_000));
+
+  const [byRadius, byBudget] = await Promise.allSettled([
+    widerRadius > radius
+      ? getEligibleRestaurants(budget, widerRadius, lat, lng)
+      : Promise.resolve([]),
+    higherBudget > budget
+      ? getEligibleRestaurants(higherBudget, radius, lat, lng)
+      : Promise.resolve([]),
+  ]);
+
+  const helped = (outcome: PromiseSettledResult<unknown[]>) =>
+    outcome.status === "fulfilled" && outcome.value.length > 0;
+
+  return {
+    widerRadius: helped(byRadius) ? widerRadius : null,
+    higherBudget: helped(byBudget) ? higherBudget : null,
+  };
+}
+
 export async function POST(request: Request): Promise<Response> {
   try {
+    // ------------------------------------------------------------------
+    // 0. Rate limit sebelum menyentuh database
+    // ------------------------------------------------------------------
+    const limit = rateLimit(
+      `spin:${clientIp(request)}`,
+      RATE_LIMIT,
+      RATE_LIMIT_WINDOW_MS,
+    );
+
+    if (!limit.allowed) {
+      return Response.json(
+        {
+          error: "Too many spins. Slow down.",
+          code: "RATE_LIMITED",
+          message: `Santai dulu, coba lagi ${limit.retryAfterSeconds} detik lagi.`,
+        },
+        { status: 429, headers: rateLimitHeaders(limit, RATE_LIMIT) },
+      );
+    }
+
     // ------------------------------------------------------------------
     // 1. Parse JSON body
     // ------------------------------------------------------------------
@@ -87,7 +157,7 @@ export async function POST(request: Request): Promise<Response> {
     //    user_lat: float,   -90 – 90
     //    user_lng: float,   -180 – 180
     // ------------------------------------------------------------------
-    if (!isValidInteger(budget, 1, 100_000_000)) {
+    if (!isValidInteger(budget, 1, MAX_BUDGET)) {
       return Response.json(
         {
           error:
@@ -98,7 +168,7 @@ export async function POST(request: Request): Promise<Response> {
       );
     }
 
-    if (!isValidInteger(radius, 1, 50_000)) {
+    if (!isValidInteger(radius, 1, MAX_RADIUS)) {
       return Response.json(
         {
           error:
@@ -162,16 +232,47 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     // ------------------------------------------------------------------
-    // 5. Return 404 if no eligible restaurants found
+    // 5. Tidak ada kandidat — jelaskan penyebabnya dan beri jalan keluar
+    //    yang sudah dipastikan berhasil, bukan saran asal.
     // ------------------------------------------------------------------
     if (candidates.length === 0) {
+      let diagnosis = { widerRadius: null as number | null, higherBudget: null as number | null };
+      try {
+        diagnosis = await diagnoseEmptyResult(
+          budgetNum,
+          radiusNum,
+          userLat,
+          userLng,
+        );
+      } catch (diagnosisError) {
+        // Diagnosa hanya nilai tambah; kegagalannya tidak boleh mengubah
+        // jawaban utama menjadi 500.
+        console.warn(
+          "[POST /api/spin] Diagnosa kandidat kosong gagal:",
+          diagnosisError instanceof Error
+            ? diagnosisError.message
+            : String(diagnosisError),
+        );
+      }
+
+      const message = diagnosis.widerRadius
+        ? `Belum ada warung dalam ${radiusNum} m. Ada yang cocok kalau radiusnya dilebarkan.`
+        : diagnosis.higherBudget
+          ? `Belum ada warung dengan budget Rp${budgetNum.toLocaleString("id-ID")}. Ada yang cocok kalau budgetnya dinaikkan.`
+          : "Belum ada warung yang terdata di sekitar sini. Coba geser lokasi atau bantu tambahkan warungnya.";
+
       return Response.json(
         {
           error:
             "No eligible restaurants found for the given budget and radius.",
           code: "NO_ELIGIBLE_RESTAURANTS",
+          message,
+          suggestions: {
+            radius: diagnosis.widerRadius,
+            budget: diagnosis.higherBudget,
+          },
         },
-        { status: 404 }
+        { status: 404, headers: rateLimitHeaders(limit, RATE_LIMIT) }
       );
     }
 
@@ -199,7 +300,7 @@ export async function POST(request: Request): Promise<Response> {
           hygiene_score: selected.hygiene_score,
         },
       },
-      { status: 200 }
+      { status: 200, headers: rateLimitHeaders(limit, RATE_LIMIT) }
     );
   } catch (error) {
     // ------------------------------------------------------------------
