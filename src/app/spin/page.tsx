@@ -6,6 +6,7 @@ import { AnimatePresence, m } from "framer-motion";
 import { MotionProvider } from "@/components/motion/motion-provider";
 import { LocationPicker } from "@/components/location/location-picker";
 import { AppHeader } from "@/components/home/app-header";
+import { BottomNav } from "@/components/home/bottom-nav";
 import { DEFAULT_AREA, type LocationChoice } from "@/lib/location";
 import {
   getSpinSessionId,
@@ -309,7 +310,7 @@ export default function SpinPage() {
 
   return (
     <MotionProvider>
-          <main className="relative min-h-screen overflow-hidden bg-slate-50 font-sans text-slate-900 pb-16 selection:bg-rose-500 selection:text-white">
+          <main className="relative min-h-screen overflow-hidden bg-slate-100 pb-24 font-sans text-slate-900 selection:bg-rose-500 selection:text-white md:pb-10">
             {/* Background Decor */}
             <div className="absolute top-0 inset-x-0 h-[500px] bg-gradient-to-b from-rose-100/50 via-slate-50 to-transparent z-0 pointer-events-none"></div>
 
@@ -682,6 +683,7 @@ export default function SpinPage() {
                 </AnimatePresence>
               </div>
             </div>
+            <BottomNav />
           </main>
     </MotionProvider>
   );

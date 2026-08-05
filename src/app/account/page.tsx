@@ -5,6 +5,9 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
+import { AppHeader } from "@/components/home/app-header";
+import { BottomNav } from "@/components/home/bottom-nav";
+import { Card, MenuList, MenuRow, SectionHeader } from "@/components/ui/surface";
 
 function getDisplayName(session: Session | null): string {
   if (!session) return "Tamu";
@@ -258,159 +261,131 @@ export default function AccountPage() {
       .map((part) => part[0]?.toUpperCase() ?? "")
       .join("") || "GM";
 
+  const isAnonymous = session?.user?.is_anonymous === true;
+
   return (
-    <main className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-20">
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-200/60 px-4 md:px-8 py-3 shadow-sm flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/"
-            className="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center text-slate-600 hover:bg-rose-50 hover:text-rose-500 transition-all active:scale-95 font-bold"
-          >
-            ←
-          </Link>
-          <h1 className="text-lg font-bold text-slate-800 tracking-tight">
-            Akun Saya
-          </h1>
-        </div>
+    <main className="min-h-screen bg-slate-100 pb-24 font-sans text-slate-800 md:pb-10">
+      <AppHeader session={false} />
 
-        {session ? (
-          <button
-            type="button"
-            onClick={() => void handleSignOut()}
-            disabled={isLoading || isSigningOut}
-            className="rounded-full bg-rose-50 text-rose-600 border border-rose-200 px-4 py-1.5 text-xs font-bold transition hover:bg-rose-100 active:scale-95 disabled:opacity-50"
-          >
-            {isSigningOut ? "Keluar..." : "Keluar Akun"}
-          </button>
-        ) : (
-          <Link
-            href="/login"
-            className="rounded-full bg-sky-50 text-sky-600 border border-sky-200 px-4 py-1.5 text-xs font-bold transition hover:bg-sky-100 active:scale-95"
-          >
-            Login Sekarang
-          </Link>
-        )}
-      </header>
-
-      <div className="mx-auto w-full max-w-4xl px-4 md:px-8 pt-6 flex flex-col gap-6">
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-3 px-4 pt-3 md:px-6">
         {isLoading ? (
-          <div className="animate-pulse flex flex-col gap-6">
-            <div className="h-40 rounded-3xl bg-slate-200" />
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="h-32 rounded-2xl bg-slate-200" />
-              <div className="h-32 rounded-2xl bg-slate-200" />
-              <div className="h-32 rounded-2xl bg-slate-200" />
-            </div>
+          <div className="flex animate-pulse flex-col gap-3">
+            <div className="h-28 rounded-xl bg-slate-200" />
+            <div className="h-40 rounded-xl bg-slate-200" />
           </div>
         ) : (
           <>
-            <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 md:p-8 shadow-sm">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-rose-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4"></div>
-
-              <div className="relative z-10 flex flex-col sm:flex-row gap-6 items-center sm:items-start text-center sm:text-left">
-                <div className="h-24 w-24 shrink-0 rounded-full border-4 border-white shadow-md bg-linear-to-br from-slate-100 to-slate-200 flex items-center justify-center text-3xl font-black text-slate-400 overflow-hidden">
+            {/* Kartu profil. Rata, tanpa lingkaran blur dekoratif dan tanpa
+                nama sebesar judul halaman. */}
+            <Card className="flex items-center gap-3.5">
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-rose-500 text-lg font-bold text-white">
+                {isAnonymous ? (
+                  initials
+                ) : (
+                  /* eslint-disable-next-line @next/next/no-img-element */
                   <img
                     src={liveAvatarUrl}
-                    alt="Avatar"
-                    className="w-full h-full object-cover"
+                    alt=""
+                    className="h-full w-full object-cover"
                   />
-                </div>
+                )}
+              </span>
 
-                <div className="flex-1 mt-2">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-rose-500 mb-1">
-                    {session ? "Profil Pengguna" : "Profil Tamu"}
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-base font-bold tracking-tight text-slate-900">
+                  {isAnonymous ? "Kamu belum punya akun" : liveDisplayName}
+                </p>
+                <p className="mt-0.5 truncate text-xs text-slate-500">
+                  {isAnonymous
+                    ? "Sesi tamu — riwayat tersimpan di HP ini saja"
+                    : email}
+                </p>
+                {liveBio && !isAnonymous ? (
+                  <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-slate-500">
+                    {liveBio}
                   </p>
-                  <h2 className="text-3xl font-black tracking-tight text-slate-900">
-                    {liveDisplayName}
-                  </h2>
-                  <p className="mt-1 text-sm font-medium text-slate-500">
-                    {email}
-                  </p>
-                  {liveBio ? (
-                    <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600">
-                      {liveBio}
-                    </p>
-                  ) : null}
-
-                  {session ? (
-                    <span className="inline-block mt-3 px-2.5 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-bold uppercase tracking-widest rounded-md border border-emerald-100">
-                      Status: Aktif
-                    </span>
-                  ) : (
-                    <span className="inline-block mt-3 px-2.5 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-widest rounded-md border border-slate-200">
-                      Status: Belum Login
-                    </span>
-                  )}
-                </div>
+                ) : null}
               </div>
 
-              <div className="relative z-10 mt-8 grid grid-cols-2 gap-4 border-t border-slate-100 pt-6">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
-                    Dibuat Sejak
+              {isAnonymous && (
+                <Link
+                  href="/login"
+                  className="shrink-0 rounded-lg bg-rose-500 px-3.5 py-2 text-xs font-bold text-white transition-colors hover:bg-rose-600"
+                >
+                  Masuk
+                </Link>
+              )}
+            </Card>
+
+            {/* Ajakan menyimpan akun hanya untuk yang memang punya sesuatu
+                untuk hilang. */}
+            {isAnonymous && (
+              <Card className="border-amber-200 bg-amber-50">
+                <p className="text-sm font-bold text-amber-900">
+                  Simpan email, sekali saja
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-amber-800">
+                  Riwayat spin dan daftar simpananmu ikut terbawa, bahkan kalau
+                  kamu ganti HP. Tidak ada password yang perlu diingat.
+                </p>
+              </Card>
+            )}
+
+            {!isAnonymous && session ? (
+              <div className="grid grid-cols-2 gap-3">
+                <Card>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                    Bergabung
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-slate-800">
+                  <p className="mt-1 text-sm font-bold text-slate-800">
                     {createdAt}
                   </p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
-                    Terakhir Masuk
+                </Card>
+                <Card>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                    Terakhir masuk
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-slate-800">
+                  <p className="mt-1 text-sm font-bold text-slate-800">
                     {lastSignIn}
                   </p>
-                </div>
+                </Card>
               </div>
-            </section>
+            ) : null}
 
-            <section className="grid gap-6 md:grid-cols-[1fr_2fr]">
-              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-4">
-                  Aksi Cepat
-                </p>
-                <div className="space-y-3">
-                  <Link
-                    href="/spin"
-                    className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-700 transition hover:bg-rose-50 hover:text-rose-600 hover:border-rose-100 active:scale-95"
+            <div>
+              <SectionHeader title="Punyamu" />
+              <MenuList>
+                <MenuRow
+                  href="/riwayat"
+                  icon="🕒"
+                  label="Riwayat & simpanan"
+                  hint="Spin terakhir dan tempat yang kamu simpan"
+                />
+                <MenuRow
+                  href="/spin"
+                  icon="🎰"
+                  label="Spin dengan filter"
+                  hint="Atur budget, jarak, dan jam buka"
+                />
+                <MenuRow
+                  href="/map"
+                  icon="📍"
+                  label="Peta restoran"
+                  hint="Lihat sebaran dan status kebersihan"
+                />
+              </MenuList>
+            </div>
+
+            {!isAnonymous && (
+              <div>
+                <SectionHeader title="Profil" />
+                <Card>
+                  <form
+                    onSubmit={(e) => void handleSaveProfile(e)}
+                    className="grid gap-3"
                   >
-                    <span className="text-lg">🎰</span> Buka Spin Makanan
-                  </Link>
-                  <Link
-                    href="/map"
-                    className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-700 transition hover:bg-sky-50 hover:text-sky-600 hover:border-sky-100 active:scale-95"
-                  >
-                    <span className="text-lg">📍</span> Lihat Peta Restoran
-                  </Link>
-                  <Link
-                    href="/blind"
-                    className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-800 hover:text-white active:scale-95"
-                  >
-                    <span className="text-lg">🎲</span> Coba Blind Gacha
-                  </Link>
-                </div>
-              </div>
-
-              <div className="grid gap-4">
-                <form
-                  onSubmit={(e) => void handleSaveProfile(e)}
-                  className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
-                        Edit Profil
-                      </p>
-                      <h3 className="mt-2 text-base font-bold text-slate-900 tracking-tight">
-                        Ubah foto, nama, dan biodata
-                      </h3>
-                    </div>
-
-                  </div>
-
-                  <div className="mt-5 grid gap-4">
                     <label className="grid gap-1.5">
-                      <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                      <span className="text-xs font-semibold text-slate-600">
                         Nama tampil
                       </span>
                       <input
@@ -421,48 +396,14 @@ export default function AccountPage() {
                             fullName: event.target.value,
                           }))
                         }
-                        placeholder="Contoh: Sulthan Dhiyazka"
-                        className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-800 outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-100"
+                        placeholder="Nama yang muncul di aplikasi"
+                        className="rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 outline-none transition focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
                       />
                     </label>
 
                     <label className="grid gap-1.5">
-                      <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
-                        Foto profil dari URL
-                      </span>
-                      <input
-                        value={profileForm.avatarUrl}
-                        onChange={(event) =>
-                          setProfileForm((current) => ({
-                            ...current,
-                            avatarUrl: event.target.value,
-                          }))
-                        }
-                        placeholder="Tempel URL foto, atau biarkan kosong untuk avatar otomatis"
-                        className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-800 outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-100"
-                      />
-                    </label>
-
-                    <label className="grid gap-1.5">
-                      <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
-                        Upload foto baru
-                      </span>
-                      <input
-                        ref={avatarInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleAvatarFileChange}
-                        className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 file:mr-4 file:rounded-full file:border-0 file:bg-rose-500 file:px-4 file:py-2 file:text-xs file:font-bold file:text-white hover:bg-slate-100"
-                      />
-                      <p className="text-xs text-slate-500">
-                        Pilih file gambar untuk diunggah.
-                        Kalau diisi, ini akan dipakai menggantikan URL di atas.
-                      </p>
-                    </label>
-
-                    <label className="grid gap-1.5">
-                      <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
-                        Biodata singkat
+                      <span className="text-xs font-semibold text-slate-600">
+                        Bio singkat
                       </span>
                       <textarea
                         value={profileForm.bio}
@@ -472,91 +413,86 @@ export default function AccountPage() {
                             bio: event.target.value,
                           }))
                         }
-                        rows={4}
-                        placeholder="Contoh: Mahasiswa lapar yang suka cari makan enak dan murah."
-                        className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-800 outline-none transition focus:border-rose-300 focus:bg-white focus:ring-2 focus:ring-rose-100"
+                        rows={3}
+                        placeholder="Mahasiswa lapar yang suka cari makan murah."
+                        className="rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 outline-none transition focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
                       />
                     </label>
-                  </div>
 
-                  <div className="mt-5 flex flex-wrap gap-3">
+                    <label className="grid gap-1.5">
+                      <span className="text-xs font-semibold text-slate-600">
+                        Foto profil
+                      </span>
+                      <input
+                        ref={avatarInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarFileChange}
+                        className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-rose-500 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-white"
+                      />
+                      {/* Kolom URL dipertahankan untuk yang sudah terlanjur
+                          memakainya, tapi tidak lagi sejajar dengan unggahan:
+                          dua cara mengisi hal yang sama, berdampingan, membuat
+                          orang ragu mana yang menang. */}
+                      <input
+                        value={profileForm.avatarUrl}
+                        onChange={(event) =>
+                          setProfileForm((current) => ({
+                            ...current,
+                            avatarUrl: event.target.value,
+                          }))
+                        }
+                        placeholder="atau tempel URL foto"
+                        className="rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-700 outline-none transition focus:border-rose-400"
+                      />
+                    </label>
+
                     <button
                       type="submit"
                       disabled={isSavingProfile}
-                      className="rounded-2xl bg-rose-500 px-4 py-3 text-sm font-bold text-white shadow-sm shadow-rose-500/30 transition hover:bg-rose-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70"
+                      className="mt-1 rounded-lg bg-rose-500 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {isSavingProfile
                         ? isUploadingAvatar
-                          ? "Mengunggah foto..."
-                          : "Menyimpan..."
-                        : "Simpan Profil"}
+                          ? "Mengunggah foto…"
+                          : "Menyimpan…"
+                        : "Simpan profil"}
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => void handleRefreshSession()}
-                      className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-sky-50 hover:text-sky-700"
-                    >
-                      Muat ulang data
-                    </button>
-                  </div>
 
-                  {profileMessage ? (
-                    <p className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                      {profileMessage}
-                    </p>
-                  ) : null}
-                </form>
-
-                {session ? (
-                  <button
-                    type="button"
-                    onClick={() => void handleSignOut()}
-                    className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col text-left transition hover:border-rose-200 hover:bg-rose-50 active:scale-[0.99]"
-                  >
-                    <span className="text-2xl mb-3">🚪</span>
-                    <h3 className="text-base font-bold text-slate-900 tracking-tight">
-                      Keluar Akun
-                    </h3>
-                    <p className="mt-2 text-xs leading-relaxed text-slate-500">
-                      Tekan kartu ini untuk keluar dari sesi aktif dan kembali
-                      ke halaman utama.
-                    </p>
-                  </button>
-                ) : (
-                  <Link
-                    href="/login"
-                    className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col text-left transition hover:border-rose-200 hover:bg-rose-50 active:scale-[0.99]"
-                  >
-                    <span className="text-2xl mb-3">🚀</span>
-                    <h3 className="text-base font-bold text-slate-900 tracking-tight">
-                      Mode Tamu (Guest)
-                    </h3>
-                    <p className="mt-2 text-xs leading-relaxed text-slate-500">
-                      Kamu sedang masuk sebagai tamu. Klik kartu ini untuk
-                      masuk dengan magic link email.
-                    </p>
-                  </Link>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => void handleRefreshSession()}
-                  className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col text-left transition hover:border-sky-200 hover:bg-sky-50 active:scale-[0.99]"
-                >
-                  <span className="text-2xl mb-3">🔄</span>
-                  <h3 className="text-base font-bold text-slate-900 tracking-tight">
-                    Sinkronkan Profil
-                  </h3>
-                  <p className="mt-2 text-xs leading-relaxed text-slate-500">
-                    Klik untuk memuat ulang sesi Supabase dan menyegarkan data
-                    akun di halaman ini.
-                  </p>
-                </button>
+                    {profileMessage ? (
+                      <p className="rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs text-slate-600">
+                        {profileMessage}
+                      </p>
+                    ) : null}
+                  </form>
+                </Card>
               </div>
-            </section>
+            )}
+
+            <div>
+              <SectionHeader title="Lainnya" />
+              <MenuList>
+                <MenuRow
+                  onClick={() => void handleRefreshSession()}
+                  icon="🔄"
+                  label="Muat ulang data akun"
+                  hint="Kalau perubahanmu belum kelihatan"
+                />
+                {session && !isAnonymous ? (
+                  <MenuRow
+                    onClick={() => void handleSignOut()}
+                    icon="🚪"
+                    label={isSigningOut ? "Keluar…" : "Keluar akun"}
+                    danger
+                  />
+                ) : null}
+              </MenuList>
+            </div>
           </>
         )}
       </div>
+
+      <BottomNav />
     </main>
   );
 }

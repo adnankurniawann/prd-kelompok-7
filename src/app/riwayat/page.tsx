@@ -1,6 +1,8 @@
 import Link from "next/link";
 
 import { AppHeader } from "@/components/home/app-header";
+import { BottomNav } from "@/components/home/bottom-nav";
+import { Card, SectionHeader } from "@/components/ui/surface";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 /**
@@ -97,29 +99,25 @@ export default async function RiwayatPage() {
   const favorites = (favoriteResult.data ?? []) as unknown as FavoriteRow[];
 
   return (
-    <main className="min-h-screen bg-slate-50 pb-12 font-sans text-slate-800">
+    <main className="min-h-screen bg-slate-100 pb-24 font-sans text-slate-800 md:pb-10">
       <AppHeader session={false} />
-      <div className="mx-auto max-w-md px-5 pt-8">
-        <h1 className="text-xl font-black tracking-tight text-slate-900">
-          Riwayat
-        </h1>
-
-        <section className="mt-7">
-          <h2 className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
-            Tersimpan
-          </h2>
+      <div className="mx-auto max-w-2xl px-4 pt-4 md:px-6">
+        <section className="mb-4">
+          <SectionHeader title="Tersimpan" action="Spin lagi" actionHref="/spin" />
 
           {favorites.length === 0 ? (
-            <p className="mt-3 text-sm leading-relaxed text-slate-400">
-              Belum ada yang disimpan. Tekan &ldquo;Simpan buat nanti&rdquo; di
-              hasil spin.
-            </p>
+            <Card>
+              <p className="text-sm leading-relaxed text-slate-400">
+                Belum ada yang disimpan. Tekan &ldquo;Simpan buat nanti&rdquo; di
+                hasil spin.
+              </p>
+            </Card>
           ) : (
-            <ul className="mt-3 space-y-2">
+            <ul className="grid gap-2 sm:grid-cols-2">
               {favorites.map((row) => (
                 <li
                   key={row.restaurants?.id ?? row.created_at}
-                  className="rounded-xl border border-slate-100 bg-white px-4 py-3"
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3"
                 >
                   <p className="text-sm font-semibold text-slate-800">
                     ⭐ {row.restaurants?.name ?? "Tempat tidak dikenal"}
@@ -133,21 +131,21 @@ export default async function RiwayatPage() {
           )}
         </section>
 
-        <section className="mt-9">
-          <h2 className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
-            Spin terakhir
-          </h2>
+        <section>
+          <SectionHeader title="Spin terakhir" />
 
           {history.length === 0 ? (
-            <p className="mt-3 text-sm leading-relaxed text-slate-400">
-              Belum ada spin yang tercatat.
-            </p>
+            <Card>
+              <p className="text-sm leading-relaxed text-slate-400">
+                Belum ada spin yang tercatat.
+              </p>
+            </Card>
           ) : (
-            <ul className="mt-3 space-y-2">
+            <ul className="space-y-2">
               {history.map((row) => (
                 <li
                   key={row.id}
-                  className="rounded-xl border border-slate-100 bg-white px-4 py-3"
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3"
                 >
                   <div className="flex items-baseline justify-between gap-3">
                     <p className="min-w-0 truncate text-sm font-semibold text-slate-800">
@@ -171,6 +169,8 @@ export default async function RiwayatPage() {
           )}
         </section>
       </div>
+
+      <BottomNav />
     </main>
   );
 }

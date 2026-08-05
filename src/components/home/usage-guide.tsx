@@ -11,8 +11,9 @@ import { useEffect, useState } from "react";
  * justru yang paling butuh, dan justru mereka yang tidak akan menggulir
  * sejauh itu.
  *
- * Tapi panduan yang selamanya memenuhi layar juga mengganggu orang yang sudah
- * hafal. Jadi ia bisa ditutup, dan pilihannya diingat.
+ * Bentuknya rata dan padat: tiga langkah bernomor dalam satu baris, tanpa
+ * kotak berlapis. Panduan yang memakan setengah layar akan ditutup orang
+ * sebelum dibaca.
  */
 
 const STORAGE_KEY = "gacha-makan:panduan-ditutup";
@@ -20,29 +21,20 @@ const STORAGE_KEY = "gacha-makan:panduan-ditutup";
 const STEPS = [
   {
     n: 1,
-    tone: "rose",
-    title: "Tentukan budget & jarak",
-    body: "Geser dua slider sesuai isi dompet dan seberapa jauh kamu mau jalan.",
+    title: "Atur budget & jarak",
+    body: "Dua slider, sesuai isi dompet.",
   },
   {
     n: 2,
-    tone: "amber",
     title: "Tekan SPIN",
-    body: "Dapat satu warung, bukan daftar panjang. Nggak cocok? Spin lagi.",
+    body: "Dapat satu warung, bukan daftar.",
   },
   {
     n: 3,
-    tone: "emerald",
     title: "Kasih tahu hasilnya",
-    body: "Jadi ke sana, simpan buat nanti, atau laporkan kalau tempatnya kotor.",
+    body: "Jadi ke sana, simpan, atau spin lagi.",
   },
 ] as const;
-
-const TONE: Record<string, string> = {
-  rose: "bg-rose-50 text-rose-600",
-  amber: "bg-amber-50 text-amber-600",
-  emerald: "bg-emerald-50 text-emerald-600",
-};
 
 export function UsageGuide({
   /** Pengguna yang belum pernah spin selalu melihatnya terbuka. */
@@ -51,8 +43,7 @@ export function UsageGuide({
   forceOpen?: boolean;
 }) {
   // Dimulai terbuka, lalu ditutup setelah mount kalau memang pernah ditutup.
-  // Kebalikannya — dimulai tertutup — membuat panduan berkedip muncul untuk
-  // orang yang sudah menutupnya.
+  // Kebalikannya membuat panduan berkedip muncul untuk yang sudah menutupnya.
   const [open, setOpen] = useState(true);
   const [ready, setReady] = useState(false);
 
@@ -69,7 +60,7 @@ export function UsageGuide({
     try {
       if (window.localStorage.getItem(STORAGE_KEY) === "1") setOpen(false);
     } catch {
-      // Storage diblokir; panduannya tetap tampil. Itu kegagalan yang aman.
+      // Storage diblokir; panduannya tetap tampil. Kegagalan yang aman.
     }
     setReady(true);
     /* eslint-enable react-hooks/set-state-in-effect */
@@ -80,7 +71,7 @@ export function UsageGuide({
     try {
       window.localStorage.setItem(STORAGE_KEY, "1");
     } catch {
-      // Tidak apa-apa; ia akan muncul lagi lain kali.
+      // Ia akan muncul lagi lain kali.
     }
   };
 
@@ -93,9 +84,9 @@ export function UsageGuide({
     }
   };
 
-  // Sebelum localStorage terbaca, ruangnya ditahan supaya isi di bawahnya
+  // Ruangnya ditahan sebelum localStorage terbaca, supaya isi di bawahnya
   // tidak melompat begitu panduannya menutup.
-  if (!ready) return <div className="h-[132px]" aria-hidden="true" />;
+  if (!ready) return <div className="h-[108px]" aria-hidden="true" />;
 
   if (!open) {
     return (
@@ -104,10 +95,8 @@ export function UsageGuide({
         onClick={reopen}
         className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-left transition-colors hover:bg-slate-50"
       >
-        <span className="text-sm font-semibold text-slate-600">
-          Lihat cara pakai
-        </span>
-        <span className="text-xs text-slate-400">Buka</span>
+        <span className="text-sm font-semibold text-slate-600">Cara pakai</span>
+        <span className="text-xs font-bold text-rose-500">Lihat</span>
       </button>
     );
   }
@@ -115,15 +104,15 @@ export function UsageGuide({
   return (
     <section
       aria-label="Cara pakai"
-      className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+      className="rounded-xl border border-slate-200 bg-white p-4"
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-bold tracking-tight text-slate-900">
-            Bingung mau makan apa? Tiga langkah.
+          <h2 className="text-[15px] font-bold tracking-tight text-slate-900">
+            Bingung mau makan apa?
           </h2>
-          <p className="mt-1 text-[13px] leading-relaxed text-slate-500">
-            Nggak perlu daftar. Langsung bisa dipakai.
+          <p className="mt-0.5 text-xs text-slate-500">
+            Tiga langkah. Nggak perlu daftar.
           </p>
         </div>
 
@@ -131,39 +120,36 @@ export function UsageGuide({
           <button
             type="button"
             onClick={close}
-            className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+            className="shrink-0 rounded-lg px-2 py-1 text-xs font-bold text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
           >
             Tutup
           </button>
         )}
       </div>
 
-      <ol className="mt-4 grid gap-3 sm:grid-cols-3">
+      <ol className="mt-3 grid gap-2.5 sm:grid-cols-3">
         {STEPS.map((step) => (
-          <li
-            key={step.n}
-            className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5"
-          >
-            <span
-              className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold ${TONE[step.tone]}`}
-            >
+          <li key={step.n} className="flex items-start gap-2.5">
+            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-rose-50 text-[11px] font-bold text-rose-500">
               {step.n}
             </span>
-            <p className="mt-2.5 text-sm font-semibold text-slate-800">
-              {step.title}
-            </p>
-            <p className="mt-1 text-xs leading-relaxed text-slate-500">
-              {step.body}
-            </p>
+            <span className="min-w-0">
+              <span className="block text-[13px] font-semibold text-slate-800">
+                {step.title}
+              </span>
+              <span className="mt-0.5 block text-xs leading-snug text-slate-500">
+                {step.body}
+              </span>
+            </span>
           </li>
         ))}
       </ol>
 
       <Link
         href="/spin"
-        className="mt-4 block w-full rounded-xl bg-rose-500 px-5 py-3 text-center text-sm font-bold text-white shadow-md shadow-rose-500/25 transition-all hover:bg-rose-600 active:scale-[0.98]"
+        className="mt-3.5 block w-full rounded-lg bg-rose-500 px-5 py-2.5 text-center text-sm font-bold text-white transition-colors hover:bg-rose-600 active:scale-[0.99]"
       >
-        Mulai spin sekarang →
+        Mulai spin
       </Link>
     </section>
   );
