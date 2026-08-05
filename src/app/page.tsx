@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Dices, History, MapPin } from "lucide-react";
+import { Dices, History, MapPin, Wallet } from "lucide-react";
 import { Suspense } from "react";
 
 import { AppHeader } from "@/components/home/app-header";
@@ -81,17 +81,20 @@ export default async function Home() {
         )}
 
         {/* --- Tujuan lain. Tidak ada "Spin" di sini; ia sudah di atas. ----- */}
-        <nav className="mt-3 grid grid-cols-3 rounded-xl border border-slate-200 bg-white">
-          <IconTile href="/blind" icon={Dices} label="Blind gacha" tone="slate" />
+        <nav className="mt-3 grid grid-cols-4 rounded-xl border border-slate-200 bg-white">
+          <IconTile href="/blind" icon={Dices} label="Blind" tone="slate" />
           <IconTile href="/map" icon={MapPin} label="Peta" tone="sky" />
+          <IconTile href="/dompet" icon={Wallet} label="Dompet" tone="emerald" />
           <IconTile href="/riwayat" icon={History} label="Riwayat" tone="amber" />
         </nav>
 
-        {user && !firstTime && (
-          <div className="mt-3">
-            <WalletCard />
-          </div>
-        )}
+        {/* Dompet selalu tampil. Sebelumnya ia bersyarat "sudah pernah
+            spin" — dan kalau pencatatan spin belum jalan, syaratnya tidak
+            pernah terpenuhi dan seluruh fitur budgeting hilang tanpa ada yang
+            sadar. Saat budget belum diatur, kartunya berubah jadi ajakan. */}
+        <div className="mt-3">
+          <WalletCard compact />
+        </div>
 
         {isAnonymous && !firstTime && (
           <Card className="mt-3 border-amber-200 bg-amber-50">

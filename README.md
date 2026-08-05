@@ -190,6 +190,7 @@ src/app/            Halaman dan route handler
   api/              spin, spin/action, report, favorites, restaurants, wallet
   spin/ blind/      Dua cara mendapatkan hasil
   map/ riwayat/     Peta dan riwayat
+  dompet/           Budget makan bulanan
   hasil/[id]/       Halaman hasil yang bisa dibagikan, plus Open Graph image
 src/components/
   ui/               Primitif bersama: shadcn + surface.tsx milik aplikasi
