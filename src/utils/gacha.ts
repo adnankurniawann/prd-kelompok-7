@@ -4,6 +4,20 @@
  */
 
 /**
+ * Name recorded in `spin_events.policy` for results this module selects.
+ *
+ * It deliberately does NOT say `uniform_random`. Selection here is weighted by
+ * how far under budget a place is, so cheaper places are shown more often.
+ * Labelling that as uniform would corrupt every later comparison: a bandit
+ * trained on this data would treat a selection bias it never saw as if it were
+ * an even draw, and conclude cheap places are more popular than they are.
+ *
+ * Change this string whenever the selection rule changes, so rows from the old
+ * and new behaviour stay separable.
+ */
+export const SPIN_POLICY = "weighted_budget_v1";
+
+/**
  * Calculates spin weights from candidate items and the user's budget.
  *
  * The weight is `max(1, budget - price_tier)` so every candidate keeps a
