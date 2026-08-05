@@ -1,11 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, m } from "framer-motion";
 import { MotionProvider } from "@/components/motion/motion-provider";
 import { LocationPicker } from "@/components/location/location-picker";
 import { DEFAULT_AREA, type LocationChoice } from "@/lib/location";
+import {
+  getSpinSessionId,
+  readSavedFilters,
+  saveFilters,
+} from "@/lib/spin-session";
+import { ShareResultButton } from "@/components/spin/share-result-button";
 
 type SpinResult = {
   id: string;
@@ -67,6 +73,11 @@ export default function SpinPage() {
   const [error, setError] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<SpinSuggestions | null>(null);
   const [onlyOpen, setOnlyOpen] = useState(true);
+  // Id baris spin_events untuk penayangan yang sedang tampil. `null` berarti
+  // penayangan ini tidak tercatat — tombolnya tetap jalan, cuma tanpa label.
+  const [eventId, setEventId] = useState<string | null>(null);
+  const [answered, setAnswered] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
   const [confirmMessage, setConfirmMessage] = useState<string | null>(null);
 
@@ -75,16 +86,74 @@ export default function SpinPage() {
   // ditolak, dan mengingat pilihan terakhir. Halaman ini cukup menerima
   // hasilnya.
 
+  // Filter tersimpan dipulihkan sekali saat mount. Mengatur ulang radius dan
+  // budget tiap kali buka adalah gesekan yang tidak perlu.
+  //
+  // Harus lewat effect, bukan lazy useState: halaman ini di-prerender, dan
+  // membaca localStorage saat render awal membuat HTML hasil hidrasi berbeda
+  // dari HTML yang dikirim server. Satu render tambahan setelah mount jauh
+  // lebih murah daripada hydration mismatch pada slider.
+  useEffect(() => {
+    const saved = readSavedFilters({
+      budgetMin: BUDGET_MIN,
+      budgetMax: BUDGET_MAX,
+      radiusMin: RADIUS_MIN,
+      radiusMax: RADIUS_MAX,
+    });
+    if (!saved) return;
+
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setBudget(saved.budget);
+    setRadius(saved.radius);
+    setOnlyOpen(saved.onlyOpen);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, []);
+
+  /**
+   * Melaporkan respons atas penayangan yang sedang tampil.
+   *
+   * Sengaja tidak ditunggu (`void`): tidak ada yang boleh menunggu jaringan
+   * hanya untuk memberi tahu kita bahwa mereka jadi ke sana.
+   */
+  const reportAction = (action: "accepted" | "respun" | "saved") => {
+    if (!eventId || answered) return;
+    setAnswered(true);
+
+    void fetch("/api/spin/action", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ event_id: eventId, action }),
+      // Supaya laporannya tetap terkirim walau halamannya langsung ditinggal.
+      keepalive: true,
+    }).catch(() => {
+      // Kehilangan satu label reward bukan alasan mengganggu siapa pun.
+    });
+  };
+
   const runSpin = async (
     spinBudget: number,
     spinRadius: number,
     spinOnlyOpen: boolean,
   ) => {
+    // Spin ulang selagi ada hasil di layar ADALAH jawabannya: hasil tadi tidak
+    // dipakai. Dicatat sebelum permintaan baru dikirim, supaya penayangan lama
+    // tidak hilang tanpa label.
+    if (result && !answered) reportAction("respun");
+
     setIsSpinning(true);
     setError(null);
     setSuggestions(null);
     setResult(null);
+    setEventId(null);
+    setAnswered(false);
+    setIsSaved(false);
     setConfirmMessage(null); // Reset pesan konfirmasi setiap kali spin ulang
+
+    saveFilters({
+      budget: spinBudget,
+      radius: spinRadius,
+      onlyOpen: spinOnlyOpen,
+    });
 
     const minSpinDelay = new Promise<void>((resolve) => {
       window.setTimeout(resolve, MIN_SPIN_DURATION_MS);
@@ -93,6 +162,7 @@ export default function SpinPage() {
     let nextResult: SpinResult | null = null;
     let nextError: string | null = null;
     let nextSuggestions: SpinSuggestions | null = null;
+    let nextEventId: string | null = null;
 
     try {
       const response = await fetch("/api/spin", {
@@ -104,10 +174,12 @@ export default function SpinPage() {
           user_lat: lat,
           user_lng: lng,
           only_open: spinOnlyOpen,
+          session_id: getSpinSessionId() ?? undefined,
         }),
       });
       const payload = (await response.json()) as {
         data?: SpinResult;
+        event_id?: string | null;
         error?: string;
         message?: string;
         suggestions?: SpinSuggestions;
@@ -125,6 +197,7 @@ export default function SpinPage() {
             : null;
       } else {
         nextResult = payload.data ?? null;
+        nextEventId = payload.event_id ?? null;
       }
     } catch {
       nextError = "Tidak bisa menjangkau API spin. Cek koneksi kamu ya.";
@@ -133,6 +206,7 @@ export default function SpinPage() {
       setError(nextError);
       setSuggestions(nextSuggestions);
       setResult(nextResult);
+      setEventId(nextEventId);
       setIsSpinning(false);
     }
   };
@@ -180,6 +254,12 @@ export default function SpinPage() {
   
   const handleConfirmFood = async () => {
     if (!result) return;
+
+    // Label reward dicatat lebih dulu dan tidak ditunggu. Dompet boleh gagal
+    // dipotong tanpa membuat kita kehilangan sinyal bahwa rekomendasinya
+    // diterima — itu dua hal yang berbeda.
+    reportAction("accepted");
+
     setIsConfirming(true);
     setConfirmMessage(null);
 
@@ -195,10 +275,30 @@ export default function SpinPage() {
       } else {
         setConfirmMessage("⚠️ Gagal memotong saldo.");
       }
-    } catch (err) {
+    } catch {
       setConfirmMessage("⚠️ Terjadi kesalahan jaringan.");
     } finally {
       setIsConfirming(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!result || isSaved) return;
+
+    // Optimistis: menyimpan favorit itu murah dan hampir selalu berhasil.
+    // Menunggu jaringan hanya untuk mengubah warna tombol terasa lambat.
+    setIsSaved(true);
+    reportAction("saved");
+
+    try {
+      const res = await fetch("/api/favorites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ restaurant_id: result.id }),
+      });
+      if (!res.ok) setIsSaved(false);
+    } catch {
+      setIsSaved(false);
     }
   };
 
@@ -525,6 +625,21 @@ export default function SpinPage() {
                               {isConfirming ? "Memproses..." : `🍽️ Konfirmasi Makan di Sini (- Rp ${result.price_tier.toLocaleString("id-ID")})`}
                             </button>
                       
+                            {/* Simpan buat nanti — jawaban ketiga, bukan cuma
+                                bookmark. "Belum sekarang, tapi menarik" adalah
+                                sinyal yang berbeda dari menolak. */}
+                            <button
+                              onClick={handleSave}
+                              disabled={isSaved}
+                              className={`w-full rounded-xl py-3.5 text-sm font-semibold transition-all active:scale-[0.98] ${
+                                isSaved
+                                  ? "border border-amber-200 bg-amber-50 text-amber-700"
+                                  : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                              }`}
+                            >
+                              {isSaved ? "⭐ Tersimpan" : "🔖 Simpan buat nanti"}
+                            </button>
+
                             {/* Tombol Navigasi & Spin Ulang */}
                             <div className="flex flex-col sm:flex-row gap-3">
                               <Link
@@ -541,6 +656,17 @@ export default function SpinPage() {
                                 <span className="text-base">🔄</span> Spin Ulang Takdir
                               </button>
                             </div>
+
+                            {/* Hasil gacha itu konten yang sudah jadi, dan
+                                mahasiswa memutuskan makan beramai-ramai di
+                                grup chat. Ini jalur distribusi termurah yang
+                                kita punya. */}
+                            <ShareResultButton
+                              restaurantId={result.id}
+                              name={result.name}
+                              distanceMeters={result.distance}
+                              priceTier={result.price_tier}
+                            />
                           </>
                         )}
                       </div>

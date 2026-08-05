@@ -409,6 +409,47 @@ export async function getAllRestaurants(): Promise<RestaurantWithCoords[]> {
 }
 
 /**
+ * Fetches one restaurant by id, or `null` when it does not exist.
+ *
+ * Used by the shareable result page. Reading the name from the database rather
+ * than from the URL is what stops the share card from being forgeable: nobody
+ * can hand out a link that renders arbitrary text on our branding.
+ */
+export async function getRestaurantById(
+  id: string,
+): Promise<RestaurantWithCoords | null> {
+  const { data, error } = await supabase
+    .from("restaurants")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(
+      `getRestaurantById: failed to fetch restaurant "${id}". ` +
+        `Supabase error: ${error.message} (code: ${error.code})`,
+    );
+  }
+
+  if (!data) return null;
+
+  const row = data as Restaurant;
+  const { lat, lng } = parsePostGISPoint(row.location);
+
+  return {
+    id: row.id,
+    name: row.name,
+    category: row.category,
+    price_tier: row.price_tier,
+    hygiene_score: row.hygiene_score,
+    is_verified_safe: row.is_verified_safe,
+    lat,
+    lng,
+    hygiene_status: row.hygiene_score >= 50 ? "GREEN" : "RED",
+  };
+}
+
+/**
  * Returns restaurants eligible for the gacha spin, filtered by:
  *   - hygiene_score >= 50 (absolute safety filter)
  *   - price_tier <= budget

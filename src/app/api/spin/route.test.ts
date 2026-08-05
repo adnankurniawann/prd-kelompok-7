@@ -4,10 +4,12 @@ const {
   getEligibleRestaurantsMock,
   calculateSpinWeightsMock,
   weightedRandomMock,
+  recordSpinEventMock,
 } = vi.hoisted(() => ({
   getEligibleRestaurantsMock: vi.fn(),
   calculateSpinWeightsMock: vi.fn(),
   weightedRandomMock: vi.fn(),
+  recordSpinEventMock: vi.fn(),
 }));
 
 vi.mock("@/lib/supabase/queries", () => ({
@@ -18,6 +20,11 @@ vi.mock("@/lib/supabase/queries", () => ({
 vi.mock("@/utils/gacha", () => ({
   calculateSpinWeights: calculateSpinWeightsMock,
   weightedRandom: weightedRandomMock,
+  SPIN_POLICY: "weighted_budget_v1",
+}));
+
+vi.mock("@/lib/supabase/events", () => ({
+  recordSpinEvent: recordSpinEventMock,
 }));
 
 import { POST } from "@/app/api/spin/route";
@@ -80,7 +87,10 @@ describe("POST /api/spin", () => {
         hygiene_score: 90,
         is_open: true,
       },
+      // Tanpa session_id tidak ada yang dicatat, dan spin tetap berhasil.
+      event_id: null,
     });
+    expect(recordSpinEventMock).not.toHaveBeenCalled();
   });
 
   it("defaults to hiding places that are closed right now", async () => {
@@ -111,6 +121,93 @@ describe("POST /api/spin", () => {
       107.77,
       false,
     );
+  });
+
+  it("mencatat penayangan dengan konteks yang dibekukan saat itu juga", async () => {
+    const candidates = [
+      {
+        id: "11111111-1111-1111-1111-111111111111",
+        name: "Ayam Geprek",
+        category: "Ayam",
+        price_tier: 15000,
+        hygiene_score: 90,
+        distance: 420,
+        is_open: true,
+      },
+      {
+        id: "22222222-2222-2222-2222-222222222222",
+        name: "Warteg Bahari",
+        category: null,
+        price_tier: 12000,
+        hygiene_score: 80,
+        distance: 900,
+        is_open: null,
+      },
+    ];
+    getEligibleRestaurantsMock.mockResolvedValue(candidates);
+    calculateSpinWeightsMock.mockReturnValue([5000, 8000]);
+    weightedRandomMock.mockReturnValue(candidates[0]);
+    recordSpinEventMock.mockResolvedValue("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+
+    const response = await POST(
+      spinRequest({
+        ...VALID_BODY,
+        session_id: "99999999-9999-4999-8999-999999999999",
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      event_id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    });
+
+    // candidate_n adalah jumlah kandidat SAAT ITU, bukan dihitung ulang nanti.
+    // Kebijakannya juga harus jujur: pemilihannya berbobot, bukan seragam.
+    expect(recordSpinEventMock).toHaveBeenCalledWith({
+      sessionId: "99999999-9999-4999-8999-999999999999",
+      restaurantId: "11111111-1111-1111-1111-111111111111",
+      userLat: -6.92,
+      userLng: 107.77,
+      distanceMeters: 420,
+      candidateCount: 2,
+      policy: "weighted_budget_v1",
+    });
+  });
+
+  it("tetap menjawab 200 walau pencatatan gagal", async () => {
+    const candidate = {
+      id: "11111111-1111-1111-1111-111111111111",
+      name: "Ayam Geprek",
+      category: "Ayam",
+      price_tier: 15000,
+      hygiene_score: 90,
+      distance: 420,
+      is_open: true,
+    };
+    getEligibleRestaurantsMock.mockResolvedValue([candidate]);
+    calculateSpinWeightsMock.mockReturnValue([5000]);
+    weightedRandomMock.mockReturnValue(candidate);
+    // recordSpinEvent menyerap errornya sendiri dan menjawab null.
+    recordSpinEventMock.mockResolvedValue(null);
+
+    const response = await POST(
+      spinRequest({
+        ...VALID_BODY,
+        session_id: "99999999-9999-4999-8999-999999999999",
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({ event_id: null });
+  });
+
+  it("menolak session_id yang bukan UUID", async () => {
+    const response = await POST(
+      spinRequest({ ...VALID_BODY, session_id: "bukan-uuid" }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(recordSpinEventMock).not.toHaveBeenCalled();
   });
 
   it("rejects a non-boolean only_open", async () => {
