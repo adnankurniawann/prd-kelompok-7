@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Clock, MapPin, ShieldCheck } from "lucide-react";
+import { Clock, MapPin, ShieldCheck } from "lucide-react";
 
 import { GachaBall } from "@/components/home/gacha-ball";
 
@@ -60,21 +60,28 @@ export function Hero() {
           </p>
 
           <div
-            className="rise-in mt-6 flex flex-wrap items-center gap-3"
+            className="rise-in mt-6 flex flex-wrap items-center gap-2.5"
             style={{ animationDelay: "180ms" }}
           >
+            {/* Slate gelap, bukan merah. Merah sudah dipakai di mana-mana —
+                aksen ikon, badge, angka — jadi tombol merah tidak lagi
+                menonjol dari sekitarnya. Warna paling gelap di halaman yang
+                seluruhnya terang justru yang paling cepat ditemukan mata.
+                Tanpa ikon panah: teksnya sudah menjelaskan tujuannya. */}
             <Link
               href="/spin"
-              className="group inline-flex items-center gap-2 rounded-xl bg-rose-500 px-7 py-4 text-base font-semibold text-white shadow-lg shadow-rose-500/25 transition-all hover:bg-rose-600 hover:shadow-xl hover:shadow-rose-500/30 active:scale-[0.98]"
+              className="inline-flex items-center rounded-xl bg-slate-900 px-7 py-4 text-base font-semibold text-white shadow-lg shadow-slate-900/15 transition-all hover:bg-slate-800 active:scale-[0.98]"
             >
               Spin sekarang
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
+
+            {/* Tombol abu, bukan tautan teks. Tautan teks di sebelah tombol
+                besar terbaca sebagai keterangan, bukan pilihan kedua. */}
             <Link
               href="/map"
-              className="text-sm font-medium text-slate-500 underline-offset-4 transition-colors hover:text-slate-800 hover:underline"
+              className="inline-flex items-center rounded-xl bg-slate-100 px-6 py-4 text-base font-medium text-slate-700 transition-colors hover:bg-slate-200 active:scale-[0.98]"
             >
-              atau lihat peta dulu
+              Lihat peta dulu
             </Link>
           </div>
 

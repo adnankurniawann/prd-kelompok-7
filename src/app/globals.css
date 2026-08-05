@@ -87,15 +87,60 @@
 }
 
 /* --- Bola gacha di hero ---------------------------------------------------
-   Ayunan pelan dengan sedikit miring, supaya terbaca sebagai benda yang
-   melayang dan bukan gambar yang digeser naik-turun. */
-@keyframes gacha-float {
+   Tiga gerakan yang saling menumpuk, masing-masing dengan durasi berbeda.
+   Itu yang membuatnya terasa hidup: kalau semuanya satu irama, matanya
+   langsung menangkap polanya dan gerakannya jadi terasa mekanis.
+
+   Yang di luar mengurus naik-turun, yang di dalam mengurus oleng. Dipisah
+   karena satu elemen tidak bisa menjalankan dua transform sekaligus. */
+@keyframes gacha-bob {
   0%,
   100% {
-    transform: translateY(0) rotate(-6deg);
+    transform: translateY(0);
   }
   50% {
-    transform: translateY(-14px) rotate(6deg);
+    transform: translateY(-18px);
+  }
+}
+
+@keyframes gacha-tilt {
+  0% {
+    transform: rotate(-9deg);
+  }
+  35% {
+    transform: rotate(7deg);
+  }
+  60% {
+    transform: rotate(-4deg);
+  }
+  100% {
+    transform: rotate(-9deg);
+  }
+}
+
+/* Getaran singkat tiap beberapa detik, seolah bolanya baru saja diguncang
+   mesin gacha. Sebagian besar durasinya diam — kejutan kecil yang jarang
+   jauh lebih menarik daripada gerakan yang terus-menerus. */
+@keyframes gacha-rattle {
+  0%,
+  86%,
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  88% {
+    transform: translateX(-3px) rotate(-3deg);
+  }
+  90% {
+    transform: translateX(3px) rotate(3deg);
+  }
+  92% {
+    transform: translateX(-2px) rotate(-2deg);
+  }
+  94% {
+    transform: translateX(2px) rotate(2deg);
+  }
+  96% {
+    transform: translateX(0) rotate(0deg);
   }
 }
 
@@ -103,21 +148,47 @@
   0%,
   100% {
     transform: scaleX(1);
-    opacity: 0.12;
+    opacity: 0.13;
   }
   50% {
-    transform: scaleX(0.82);
-    opacity: 0.07;
+    transform: scaleX(0.78);
+    opacity: 0.06;
   }
 }
 
-.gacha-float {
-  animation: gacha-float 4.5s ease-in-out infinite;
+/* Kilau yang menyapu permukaan bola. */
+@keyframes gacha-shine {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: translateX(0);
+  }
+  50% {
+    opacity: 0.6;
+    transform: translateX(10px);
+  }
+}
+
+.gacha-bob {
+  animation: gacha-bob 4.2s ease-in-out infinite;
+}
+
+.gacha-rattle {
+  animation: gacha-rattle 7s ease-in-out infinite;
+}
+
+.gacha-tilt {
+  animation: gacha-tilt 5.6s ease-in-out infinite;
+  transform-origin: 50% 55%;
 }
 
 .gacha-shadow {
   transform-origin: 100px 182px;
-  animation: gacha-shadow 4.5s ease-in-out infinite;
+  animation: gacha-shadow 4.2s ease-in-out infinite;
+}
+
+.gacha-shine {
+  animation: gacha-shine 4.2s ease-in-out infinite;
 }
 
 /* Masuk perlahan saat halaman dibuka. Sekali jalan, tidak berulang —
@@ -140,8 +211,11 @@
 /* Orang yang mematikan animasi di setelan sistemnya biasanya punya alasan
    kuat — mabuk gerak, vertigo, atau sekadar tidak tahan. Hormati itu. */
 @media (prefers-reduced-motion: reduce) {
-  .gacha-float,
+  .gacha-bob,
+  .gacha-rattle,
+  .gacha-tilt,
   .gacha-shadow,
+  .gacha-shine,
   .rise-in {
     animation: none;
   }

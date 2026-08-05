@@ -1,46 +1,61 @@
+import { AlertTriangle, ShieldCheck, Store } from "lucide-react";
+
 import { getRestaurantStats } from "@/lib/supabase/queries";
 
 /**
  * Ringkasan isi katalog.
  *
- * Sebelumnya tiga kartu gradien penuh warna — indigo-biru, emerald, dan rose —
- * dengan emoji besar dan efek melayang saat disentuh. Dua masalahnya:
+ * Kembali berwarna supaya terlihat, tapi warnanya dijaga tetap di dalam palet
+ * aplikasi. Versi sebelumnya memakai gradien indigo-biru yang tidak ada di
+ * mana pun selain di kartu itu, dan hasilnya ia jadi hal paling mencolok di
+ * halaman — mengalahkan tombol spin yang justru alasan aplikasi ini ada.
  *
- *   1. Indigo dan biru tidak ada di palet aplikasi ini sama sekali. Keduanya
- *      datang entah dari mana dan langsung jadi hal paling mencolok di
- *      halaman.
- *   2. Angka-angka ini yang paling keras berteriak, padahal ia yang paling
- *      tidak menolong. Tidak ada yang memutuskan mau makan di mana karena
- *      tahu katalognya berisi 30 restoran.
- *
- * Sekarang satu baris tenang berisi tiga angka. Informasinya utuh, tapi ia
- * berhenti bersaing dengan hal-hal yang benar-benar dipakai orang.
+ * Sekarang: latar berwarna lembut dengan teks pekat, bukan gradien pekat
+ * dengan teks putih. Cukup menonjol untuk ditemukan, tidak cukup keras untuk
+ * bersaing dengan aksi utama.
  */
 
-function Stat({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: number;
-  tone: string;
-}) {
-  return (
-    <div className="flex-1 px-3 py-3.5 text-center">
-      <p className={`text-xl font-semibold tabular-nums ${tone}`}>{value}</p>
-      <p className="mt-0.5 text-[11px] text-slate-500">{label}</p>
-    </div>
-  );
-}
+const CARDS = [
+  {
+    key: "total",
+    label: "Terdata",
+    hint: "warung di katalog",
+    icon: Store,
+    surface: "bg-slate-50 border-slate-200",
+    badge: "bg-white text-slate-500 border-slate-200",
+    value: "text-slate-900",
+  },
+  {
+    key: "safe",
+    label: "Aman",
+    hint: "skor kebersihan baik",
+    icon: ShieldCheck,
+    surface: "bg-emerald-50 border-emerald-200",
+    badge: "bg-white text-emerald-600 border-emerald-200",
+    value: "text-emerald-700",
+  },
+  {
+    key: "redFlag",
+    label: "Perlu dicek",
+    hint: "ada laporan masuk",
+    icon: AlertTriangle,
+    surface: "bg-rose-50 border-rose-200",
+    badge: "bg-white text-rose-500 border-rose-200",
+    value: "text-rose-600",
+  },
+] as const;
 
 export function RestaurantStatsSkeleton() {
   return (
-    <div className="flex animate-pulse divide-x divide-slate-100 rounded-xl border border-slate-200 bg-white">
-      {[0, 1, 2].map((index) => (
-        <div key={index} className="flex-1 px-3 py-3.5">
-          <div className="mx-auto h-6 w-8 rounded bg-slate-200" />
-          <div className="mx-auto mt-1.5 h-2.5 w-12 rounded bg-slate-100" />
+    <div className="grid animate-pulse grid-cols-3 gap-2.5">
+      {CARDS.map((card) => (
+        <div
+          key={card.key}
+          className={`rounded-xl border p-3.5 ${card.surface}`}
+        >
+          <div className="h-8 w-8 rounded-lg bg-white/70" />
+          <div className="mt-3 h-7 w-10 rounded bg-white/70" />
+          <div className="mt-1.5 h-2.5 w-14 rounded bg-white/60" />
         </div>
       ))}
     </div>
@@ -49,12 +64,38 @@ export function RestaurantStatsSkeleton() {
 
 export async function RestaurantStatsCards() {
   const stats = await getRestaurantStats();
+  const values: Record<string, number> = {
+    total: stats.total,
+    safe: stats.safe,
+    redFlag: stats.redFlag,
+  };
 
   return (
-    <div className="flex divide-x divide-slate-100 rounded-xl border border-slate-200 bg-white">
-      <Stat label="Terdata" value={stats.total} tone="text-slate-800" />
-      <Stat label="Aman" value={stats.safe} tone="text-emerald-600" />
-      <Stat label="Perlu dicek" value={stats.redFlag} tone="text-rose-500" />
+    <div className="grid grid-cols-3 gap-2.5">
+      {CARDS.map((card) => (
+        <div
+          key={card.key}
+          className={`rounded-xl border p-3.5 transition-transform hover:-translate-y-0.5 ${card.surface}`}
+        >
+          <span
+            className={`flex h-8 w-8 items-center justify-center rounded-lg border ${card.badge}`}
+          >
+            <card.icon className="h-4 w-4" aria-hidden="true" />
+          </span>
+
+          <p
+            className={`mt-2.5 text-2xl font-semibold leading-none tabular-nums ${card.value}`}
+          >
+            {values[card.key]}
+          </p>
+          <p className="mt-1.5 text-xs font-medium text-slate-700">
+            {card.label}
+          </p>
+          <p className="mt-0.5 text-[11px] leading-tight text-slate-500">
+            {card.hint}
+          </p>
+        </div>
+      ))}
     </div>
   );
 }
