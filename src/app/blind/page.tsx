@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, m } from "framer-motion";
+import { Dices, MapPin, RotateCw, ShieldCheck, UtensilsCrossed } from "lucide-react";
+import { AppHeader } from "@/components/home/app-header";
+import { BottomNav } from "@/components/home/bottom-nav";
 import { MotionProvider } from "@/components/motion/motion-provider";
 
 type SpinResult = {
@@ -127,12 +130,12 @@ export default function BlindPage() {
       });
 
       if (res.ok) {
-        setConfirmMessage("✅ Selamat makan! Saldo berhasil dipotong.");
+        setConfirmMessage("Selamat makan! Saldo sudah dipotong.");
       } else {
-        setConfirmMessage("⚠️ Gagal memotong saldo.");
+        setConfirmMessage("Saldo gagal dipotong.");
       }
     } catch (err) {
-      setConfirmMessage("⚠️ Terjadi kesalahan jaringan.");
+      setConfirmMessage("Jaringan bermasalah. Coba lagi.");
     } finally {
       setIsConfirming(false);
     }
@@ -140,22 +143,12 @@ export default function BlindPage() {
 
   return (
     <MotionProvider>
-          <main className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-20 selection:bg-slate-800 selection:text-white">
+          <main className="min-h-screen bg-slate-100 pb-24 font-sans text-slate-800 selection:bg-rose-500 selection:text-white md:pb-12">
             {/* Background Decor */}
             <div className="absolute top-0 inset-x-0 h-[400px] bg-gradient-to-b from-slate-200/50 via-slate-50 to-transparent z-0 pointer-events-none"></div>
 
             {/* STICKY HEADER */}
-            <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-200/60 px-4 md:px-8 py-3 shadow-sm flex items-center gap-3">
-              <Link
-                href="/"
-                className="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-800 hover:text-white transition-all active:scale-95 font-bold"
-              >
-                ←
-              </Link>
-              <h1 className="text-lg font-bold text-slate-800 tracking-tight">
-                Blind Gacha
-              </h1>
-            </header>
+            <AppHeader session={false} />
 
             <div className="relative z-10 mx-auto max-w-6xl w-full px-4 md:px-8 pt-6 flex flex-col lg:grid lg:grid-cols-12 gap-6 lg:gap-8">
         
@@ -174,7 +167,7 @@ export default function BlindPage() {
                   </div>
 
                   {/* Container Tombol Spin Besar (Dark Theme) */}
-                  <div className="relative flex flex-col items-center justify-center min-h-[320px] rounded-3xl bg-gradient-to-br from-slate-800 to-slate-950 py-8 overflow-hidden shadow-inner group">
+                  <div className="relative flex flex-col items-center justify-center min-h-[320px] rounded-xl bg-gradient-to-br from-slate-800 to-slate-950 py-8 overflow-hidden shadow-inner group">
                     {/* Dekorasi Cahaya di background kotak gelap */}
                     <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full blur-3xl"></div>
               
@@ -223,8 +216,8 @@ export default function BlindPage() {
                       }
                       className="relative z-10 flex flex-col h-36 w-36 sm:h-40 sm:w-40 items-center justify-center rounded-full border-4 border-slate-700 bg-white text-slate-900 shadow-[0_0_40px_rgba(255,255,255,0.1)] disabled:opacity-90 active:scale-95 transition-all hover:shadow-[0_0_60px_rgba(255,255,255,0.2)] hover:border-slate-500"
                     >
-                      <span className="text-4xl mb-1">{isRolling ? "🎲" : "🎲"}</span>
-                      <span className="text-sm font-bold tracking-widest uppercase">
+                      <Dices className="mb-1 h-9 w-9" aria-hidden="true" />
+                      <span className="text-xs font-medium">
                         {isRolling ? "Mengacak" : "Blind Roll"}
                       </span>
                     </m.button>
@@ -242,7 +235,7 @@ export default function BlindPage() {
                   </div>
 
                   {/* Info Hint Terakhir */}
-                  <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 text-center">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
                     <p className="text-xs font-semibold text-slate-600">
                       {rollHint}
                     </p>
@@ -255,7 +248,7 @@ export default function BlindPage() {
                     </p>
                     <div className="grid grid-cols-2 gap-2">
                       {BLIND_PRESETS.map((preset) => (
-                        <div key={preset.label} className="rounded-lg border border-slate-100 bg-white p-2.5 text-center shadow-sm">
+                        <div key={preset.label} className="rounded-lg border border-slate-200 bg-white p-2.5 text-center shadow-sm">
                           <p className="text-[10px] font-bold text-slate-700">{preset.label}</p>
                         </div>
                       ))}
@@ -284,7 +277,7 @@ export default function BlindPage() {
                     >
                       {/* Dekorasi Watermark Logo */}
                       <div className="absolute -top-10 -right-10 p-5 opacity-[0.03] text-[150px] rotate-12 pointer-events-none">
-                        🎲
+                        
                       </div>
 
                       <div className="relative z-10">
@@ -298,21 +291,21 @@ export default function BlindPage() {
 
                       {/* Grid Stats yang bikin penuh layout */}
                       <div className="grid grid-cols-2 gap-3 mt-8 relative z-10">
-                        <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex flex-col justify-center">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Budget Terpakai</p>
+                        <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 flex flex-col justify-center">
+                          <p className="mb-1 text-xs font-medium text-slate-500">Budget Terpakai</p>
                           <p className="text-lg font-bold text-slate-800">Rp {result.price_tier.toLocaleString("id-ID")}</p>
                         </div>
-                        <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex flex-col justify-center">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Jarak Tempuh</p>
-                          <p className="text-lg font-bold text-slate-800">📍 {formatMeters(result.distance)}</p>
+                        <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 flex flex-col justify-center">
+                          <p className="mb-1 text-xs font-medium text-slate-500">Jarak Tempuh</p>
+                          <p className="flex items-center gap-1.5 text-lg font-semibold text-slate-800"><MapPin className="h-4 w-4 text-slate-400" aria-hidden="true" />{formatMeters(result.distance)}</p>
                         </div>
-                        <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex flex-col justify-center">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Kategori</p>
-                          <p className="text-lg font-bold text-slate-800">🍴 {result.category ?? "Umum"}</p>
+                        <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 flex flex-col justify-center">
+                          <p className="mb-1 text-xs font-medium text-slate-500">Kategori</p>
+                          <p className="flex items-center gap-1.5 text-lg font-semibold text-slate-800"><UtensilsCrossed className="h-4 w-4 text-slate-400" aria-hidden="true" />{result.category ?? "Umum"}</p>
                         </div>
-                        <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex flex-col justify-center">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Skor Kebersihan</p>
-                          <p className="text-lg font-bold text-emerald-600">🛡️ {result.hygiene_score} / 100</p>
+                        <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 flex flex-col justify-center">
+                          <p className="mb-1 text-xs font-medium text-slate-500">Skor Kebersihan</p>
+                          <p className="flex items-center gap-1.5 text-lg font-semibold text-emerald-600"><ShieldCheck className="h-4 w-4" aria-hidden="true" />{result.hygiene_score} / 100</p>
                         </div>
                       </div>
 
@@ -330,7 +323,7 @@ export default function BlindPage() {
                               disabled={isConfirming}
                               className="w-full bg-rose-500 text-white py-4 rounded-xl text-center text-sm font-bold shadow-md shadow-rose-500/30 transition-all hover:bg-rose-600 active:scale-[0.98] disabled:opacity-70 flex justify-center items-center gap-2"
                             >
-                              {isConfirming ? "Memproses..." : `🍽️ Konfirmasi Makan di Sini (- Rp ${result.price_tier.toLocaleString("id-ID")})`}
+                              {isConfirming ? "Memproses..." : `Jadi ke sini (- Rp ${result.price_tier.toLocaleString("id-ID")})`}
                             </button>
 
                             <div className="flex flex-col sm:flex-row gap-4">
@@ -338,14 +331,14 @@ export default function BlindPage() {
                                 href={`/map?restaurant_id=${encodeURIComponent(result.id)}`}
                                 className="flex-1 flex items-center justify-center gap-2 bg-slate-900 py-4 rounded-xl text-sm font-semibold !text-white shadow-md transition-all hover:bg-slate-800 active:scale-[0.98]"
                               >
-                                <span className="text-base">📍</span> <span className="!text-white">Lihat di Radar Peta</span>
+                                <MapPin className="h-4 w-4" aria-hidden="true" /> <span className="!text-white">Lihat di peta</span>
                               </Link>
                               <button
                                 type="button"
                                 onClick={runBlindSpin}
                                 className="flex-1 flex items-center justify-center gap-2 border-2 border-slate-200 bg-white py-4 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 active:scale-[0.98] hover:border-slate-300 transition-all"
                               >
-                                <span className="text-base">🔄</span> Coba Acak Lagi
+                                <RotateCw className="h-4 w-4" aria-hidden="true" /> Acak lagi
                               </button>
                             </div>
                           </>
@@ -359,7 +352,7 @@ export default function BlindPage() {
                       animate={{ opacity: 1 }}
                       className="bg-white rounded-[2rem] border-2 border-dashed border-slate-200 p-10 text-center flex flex-col items-center justify-center h-full min-h-[400px]"
                     >
-                      <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-6 border border-slate-100">
+                      <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-6 border border-slate-200">
                         <span className="text-5xl grayscale opacity-60">🎁</span>
                       </div>
                       <h3 className="text-xl font-bold text-slate-800 mb-2">
@@ -373,7 +366,8 @@ export default function BlindPage() {
                 </AnimatePresence>
               </div>
             </div>
-          </main>
+            <BottomNav />
+    </main>
     </MotionProvider>
   );
 }
