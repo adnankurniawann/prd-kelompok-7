@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 
 /**
@@ -14,6 +13,10 @@ import { useEffect, useState } from "react";
  * Bentuknya rata dan padat: tiga langkah bernomor dalam satu baris, tanpa
  * kotak berlapis. Panduan yang memakan setengah layar akan ditutup orang
  * sebelum dibaca.
+ *
+ * TIDAK punya tombol spin sendiri. Tombolnya sudah ada di atas halaman, dan
+ * dua tombol menuju tempat yang sama membuat orang berhenti sebentar untuk
+ * menebak apakah keduanya benar-benar sama.
  */
 
 const STORAGE_KEY = "gacha-makan:panduan-ditutup";
@@ -145,12 +148,6 @@ export function UsageGuide({
         ))}
       </ol>
 
-      <Link
-        href="/spin"
-        className="mt-3.5 block w-full rounded-lg bg-rose-500 px-5 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-rose-600 active:scale-[0.99]"
-      >
-        Mulai spin
-      </Link>
     </section>
   );
 }
