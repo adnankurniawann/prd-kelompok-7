@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { AppHeader } from "@/components/home/app-header";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 /**
@@ -96,19 +97,12 @@ export default async function RiwayatPage() {
   const favorites = (favoriteResult.data ?? []) as unknown as FavoriteRow[];
 
   return (
-    <main className="min-h-screen bg-slate-50 px-5 py-8 font-sans text-slate-800">
-      <div className="mx-auto max-w-md">
-        <header className="flex items-center justify-between">
-          <h1 className="text-xl font-black tracking-tight text-slate-900">
-            Riwayat
-          </h1>
-          <Link
-            href="/spin"
-            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600"
-          >
-            Spin lagi
-          </Link>
-        </header>
+    <main className="min-h-screen bg-slate-50 pb-12 font-sans text-slate-800">
+      <AppHeader session={false} />
+      <div className="mx-auto max-w-md px-5 pt-8">
+        <h1 className="text-xl font-black tracking-tight text-slate-900">
+          Riwayat
+        </h1>
 
         <section className="mt-7">
           <h2 className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
