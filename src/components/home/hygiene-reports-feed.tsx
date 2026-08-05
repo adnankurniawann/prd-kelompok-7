@@ -151,7 +151,7 @@ export async function HygieneReportsFeed() {
             href="/map"
             className="mt-4 inline-block text-xs font-semibold text-rose-500 hover:text-rose-600"
           >
-            Buka Peta →
+            Buka peta
           </Link>
         </div>
       ) : (

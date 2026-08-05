@@ -69,7 +69,7 @@ export default async function HasilPage({ params }: Params) {
           href="/spin"
           className="mt-5 block w-full rounded-xl bg-rose-500 px-5 py-3.5 text-center text-sm font-bold text-white shadow-md shadow-rose-500/30 transition-transform active:scale-[0.98] hover:bg-rose-600"
         >
-          Coba punyamu →
+          Coba punyamu
         </Link>
 
         <Link
