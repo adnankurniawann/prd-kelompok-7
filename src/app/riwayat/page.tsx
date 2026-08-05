@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { AppHeader } from "@/components/home/app-header";
+import { Star } from "lucide-react";
 import { BottomNav } from "@/components/home/bottom-nav";
 import { Card, SectionHeader } from "@/components/ui/surface";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -66,7 +67,7 @@ export default async function RiwayatPage() {
     return (
       <main className="min-h-screen bg-slate-50 px-5 py-16 font-sans text-slate-800">
         <div className="mx-auto max-w-md text-center">
-          <h1 className="text-xl font-black tracking-tight">Riwayat</h1>
+          <h1 className="text-xl font-bold tracking-tight">Riwayat</h1>
           <p className="mt-2 text-sm leading-relaxed text-slate-500">
             Sesi kamu belum siap. Coba buka halaman spin dulu, lalu balik ke
             sini.
@@ -119,8 +120,9 @@ export default async function RiwayatPage() {
                   key={row.restaurants?.id ?? row.created_at}
                   className="rounded-xl border border-slate-200 bg-white px-4 py-3"
                 >
-                  <p className="text-sm font-semibold text-slate-800">
-                    ⭐ {row.restaurants?.name ?? "Tempat tidak dikenal"}
+                  <p className="flex items-center gap-1.5 text-sm font-medium text-slate-800">
+                    <Star className="h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-400" aria-hidden="true" />
+                    {row.restaurants?.name ?? "Tempat tidak dikenal"}
                   </p>
                   <p className="mt-0.5 text-[11px] text-slate-400">
                     {row.restaurants?.category ?? "Umum"}

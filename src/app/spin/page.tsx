@@ -6,6 +6,7 @@ import { AnimatePresence, m } from "framer-motion";
 import { MotionProvider } from "@/components/motion/motion-provider";
 import { LocationPicker } from "@/components/location/location-picker";
 import { AppHeader } from "@/components/home/app-header";
+import { Bookmark, BookmarkCheck, MapPin } from "lucide-react";
 import { BottomNav } from "@/components/home/bottom-nav";
 import { DEFAULT_AREA, type LocationChoice } from "@/lib/location";
 import {
@@ -574,7 +575,7 @@ export default function SpinPage() {
                           Rp {result.price_tier.toLocaleString("id-ID")}
                         </span>
                         <span className="px-3.5 py-1.5 bg-slate-100 rounded-lg text-xs font-semibold text-slate-700 border border-slate-100">
-                          📍 {formatMeters(result.distance)}
+                          <MapPin className="inline h-3.5 w-3.5" aria-hidden="true" /> {formatMeters(result.distance)}
                         </span>
                         <span className="px-3.5 py-1.5 bg-slate-50 rounded-lg text-xs font-semibold text-slate-700 border border-slate-100">
                           🍴 {result.category ?? "Umum"}
@@ -630,7 +631,15 @@ export default function SpinPage() {
                                   : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                               }`}
                             >
-                              {isSaved ? "⭐ Tersimpan" : "🔖 Simpan buat nanti"}
+                              {isSaved ? (
+                                <span className="inline-flex items-center justify-center gap-2">
+                                  <BookmarkCheck className="h-4 w-4" aria-hidden="true" /> Tersimpan
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center justify-center gap-2">
+                                  <Bookmark className="h-4 w-4" aria-hidden="true" /> Simpan buat nanti
+                                </span>
+                              )}
                             </button>
 
                             {/* Tombol Navigasi & Spin Ulang */}

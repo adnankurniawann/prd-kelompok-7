@@ -19,7 +19,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     <main className="min-h-screen bg-slate-50 font-sans flex flex-col items-center justify-center p-4 sm:p-6 selection:bg-rose-500 selection:text-white">
       {/* Brand Header */}
       <div className="mb-8 text-center">
-        <h1 className="text-4xl sm:text-5xl font-black tracking-tight">
+        <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
           <span className="text-slate-900">Gacha</span>
           <span className="text-rose-600">Makan</span>
         </h1>

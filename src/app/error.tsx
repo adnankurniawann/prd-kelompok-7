@@ -31,7 +31,7 @@ export default function Error({
           🍜
         </div>
 
-        <h1 className="text-xl font-black tracking-tight text-slate-900">
+        <h1 className="text-xl font-bold tracking-tight text-slate-900">
           Ada yang tumpah di dapur
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-slate-500">

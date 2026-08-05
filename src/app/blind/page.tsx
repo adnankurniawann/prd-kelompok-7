@@ -165,7 +165,7 @@ export default function BlindPage() {
             
                   {/* Judul & Info */}
                   <div>
-                    <h2 className="text-xl font-black text-slate-900 tracking-tight">
+                    <h2 className="text-xl font-bold text-slate-900 tracking-tight">
                       Mode Uji Nyali
                     </h2>
                     <p className="text-sm font-medium leading-relaxed text-slate-500 mt-2">
@@ -224,7 +224,7 @@ export default function BlindPage() {
                       className="relative z-10 flex flex-col h-36 w-36 sm:h-40 sm:w-40 items-center justify-center rounded-full border-4 border-slate-700 bg-white text-slate-900 shadow-[0_0_40px_rgba(255,255,255,0.1)] disabled:opacity-90 active:scale-95 transition-all hover:shadow-[0_0_60px_rgba(255,255,255,0.2)] hover:border-slate-500"
                     >
                       <span className="text-4xl mb-1">{isRolling ? "🎲" : "🎲"}</span>
-                      <span className="text-sm font-black tracking-widest uppercase">
+                      <span className="text-sm font-bold tracking-widest uppercase">
                         {isRolling ? "Mengacak" : "Blind Roll"}
                       </span>
                     </m.button>
@@ -291,7 +291,7 @@ export default function BlindPage() {
                         <div className="inline-block px-3 py-1.5 bg-slate-800 text-white rounded-md text-[10px] font-bold uppercase tracking-widest mb-5 shadow-sm">
                           ✨ Kejutan Terpilih
                         </div>
-                        <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight">
+                        <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight leading-tight">
                           {result.name}
                         </h2>
                       </div>

@@ -528,7 +528,7 @@ function MapPageContent() {
                   <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
                     Skor Kebersihan
                   </p>
-                  <p className="mt-1 text-3xl font-black text-slate-800">
+                  <p className="mt-1 text-3xl font-bold text-slate-800">
                     {selectedRestaurant.hygiene_score}
                   </p>
                 </div>

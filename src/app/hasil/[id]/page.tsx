@@ -47,7 +47,7 @@ export default async function HasilPage({ params }: Params) {
           <div className="text-4xl" aria-hidden="true">
             🎲
           </div>
-          <h1 className="mt-3 text-2xl font-black leading-tight tracking-tight text-slate-900">
+          <h1 className="mt-3 text-2xl font-bold leading-tight tracking-tight text-slate-900">
             {restaurant.name}
           </h1>
 

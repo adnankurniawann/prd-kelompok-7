@@ -1,87 +1,101 @@
 import Link from "next/link";
-import { Clock, MapPin, ShieldCheck } from "lucide-react";
+import { ArrowRight, Clock, MapPin, ShieldCheck } from "lucide-react";
 
-import { BorderBeam } from "@/components/ui/border-beam";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { GachaBall } from "@/components/home/gacha-ball";
 
 /**
  * Hero untuk pengunjung yang belum pernah spin.
  *
  * CATATAN SOAL ASALNYA: kode `Hero195` yang dirujuk tidak ikut terkirim —
- * berkas yang diberi label `hero-195-1.tsx` isinya primitif Card shadcn, dan
- * `demo.tsx` mengimpor dari `@/components/ui/hero-195` yang tidak ada di mana
- * pun. Jadi ini bukan salinan Hero195; ini hero yang disusun dari bagian-
- * bagian yang memang dikirim (Card, Button, BorderBeam) untuk aplikasi ini.
+ * berkas berlabel `hero-195-1.tsx` isinya primitif Card shadcn, dan `demo.tsx`
+ * mengimpor dari `@/components/ui/hero-195` yang tidak ada. Ini bukan salinan
+ * Hero195; ia disusun untuk aplikasi ini.
  *
- * Kalau kode Hero195 yang asli menyusul, komponen ini tinggal diganti.
- *
- * Palet dan bahasanya mengikuti aplikasi: rose sebagai aksi, slate untuk
- * netral, kalimat pendek. Tidak ada foto stok — memasang gambar restoran
- * generik dari Unsplash di aplikasi yang justru menjanjikan warung nyata di
- * Jatinangor akan terasa seperti janji yang tidak ditepati begitu orang
- * menggulir ke bawah.
+ * Prinsip tata letaknya: SATU hal yang besar, sisanya mengecil. Sebelumnya
+ * hero, panduan, kartu aksi, dan petak ikon semuanya berukuran mirip dan
+ * sama-sama tebal, jadi tidak ada yang menonjol dan mata tidak tahu harus ke
+ * mana. Sekarang judul dan tombolnya jauh lebih besar dari apa pun di
+ * bawahnya.
  */
 
 const POINTS = [
-  { icon: MapPin, label: "Cuma yang deket", hint: "Radius diatur sendiri" },
-  { icon: Clock, label: "Yang lagi buka", hint: "Jam buka ikut dicek" },
-  { icon: ShieldCheck, label: "Yang bersih", hint: "Laporan dari sesama" },
+  { icon: MapPin, label: "Yang deket" },
+  { icon: Clock, label: "Yang lagi buka" },
+  { icon: ShieldCheck, label: "Yang bersih" },
 ] as const;
 
 export function Hero() {
   return (
-    <Card className="relative overflow-hidden border-slate-200 p-6 md:p-8">
-      {/* Sinar tepi yang berjalan pelan. Satu-satunya elemen dekoratif di
-          halaman ini, dan hanya muncul untuk pengunjung baru. */}
-      <BorderBeam size={220} duration={12} />
+    <section className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white">
+      {/* Bidang warna di belakang bola, memberi kedalaman tanpa gradien di
+          belakang teks — teks di atas gradien selalu lebih sulit dibaca. */}
+      <div
+        className="pointer-events-none absolute -right-16 -top-20 h-72 w-72 rounded-full bg-rose-50 sm:-right-10"
+        aria-hidden="true"
+      />
 
-      <p className="text-xs font-bold uppercase tracking-widest text-rose-500">
-        Jatinangor
-      </p>
+      <div className="relative flex flex-col gap-6 p-6 sm:flex-row sm:items-center sm:gap-4 sm:p-9">
+        <div className="min-w-0 flex-1">
+          <p className="rise-in text-[11px] font-semibold uppercase tracking-[0.15em] text-rose-500">
+            Jatinangor
+          </p>
 
-      <h1 className="mt-2 text-2xl font-black leading-tight tracking-tight text-slate-900 md:text-3xl">
-        Bingung mau makan apa?
-        <br />
-        Biar kami yang pilih.
-      </h1>
+          {/* Satu-satunya teks besar di halaman. Bobot 700, bukan 800 —
+              cukup untuk memimpin tanpa terasa berteriak. */}
+          <h1
+            className="rise-in mt-2.5 text-[2rem] font-bold leading-[1.1] tracking-tight text-slate-900 sm:text-[2.75rem]"
+            style={{ animationDelay: "60ms" }}
+          >
+            Laper, tapi
+            <br />
+            bingung mau apa?
+          </h1>
 
-      <p className="mt-3 max-w-md text-sm leading-relaxed text-slate-500">
-        Satu tombol, satu warung. Bukan daftar dua puluh pilihan yang bikin
-        keputusannya makin berat.
-      </p>
+          <p
+            className="rise-in mt-3.5 max-w-sm text-[15px] leading-relaxed text-slate-600"
+            style={{ animationDelay: "120ms" }}
+          >
+            Tekan sekali, dapat satu warung. Bukan daftar dua puluh pilihan yang
+            bikin kamu makin lama memutuskan.
+          </p>
 
-      <div className="mt-5 flex flex-wrap items-center gap-2.5">
-        <Button asChild size="lg" className="rounded-lg px-6">
-          <Link href="/spin">Spin sekarang</Link>
-        </Button>
-        <Button asChild variant="outline" size="lg" className="rounded-lg">
-          <Link href="/map">Lihat peta dulu</Link>
-        </Button>
-      </div>
+          <div
+            className="rise-in mt-6 flex flex-wrap items-center gap-3"
+            style={{ animationDelay: "180ms" }}
+          >
+            <Link
+              href="/spin"
+              className="group inline-flex items-center gap-2 rounded-xl bg-rose-500 px-7 py-4 text-base font-semibold text-white shadow-lg shadow-rose-500/25 transition-all hover:bg-rose-600 hover:shadow-xl hover:shadow-rose-500/30 active:scale-[0.98]"
+            >
+              Spin sekarang
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+            <Link
+              href="/map"
+              className="text-sm font-medium text-slate-500 underline-offset-4 transition-colors hover:text-slate-800 hover:underline"
+            >
+              atau lihat peta dulu
+            </Link>
+          </div>
 
-      <p className="mt-3 text-xs text-slate-400">
-        Nggak perlu daftar. Langsung bisa dipakai.
-      </p>
-
-      <ul className="mt-6 grid gap-3 border-t border-slate-100 pt-5 sm:grid-cols-3">
-        {POINTS.map((point) => (
-          <li key={point.label} className="flex items-start gap-2.5">
-            <point.icon
-              className="mt-0.5 h-4 w-4 shrink-0 text-rose-500"
-              aria-hidden="true"
-            />
-            <span className="min-w-0">
-              <span className="block text-[13px] font-semibold text-slate-800">
+          <ul
+            className="rise-in mt-7 flex flex-wrap items-center gap-x-5 gap-y-2"
+            style={{ animationDelay: "240ms" }}
+          >
+            {POINTS.map((point) => (
+              <li
+                key={point.label}
+                className="flex items-center gap-1.5 text-[13px] text-slate-500"
+              >
+                <point.icon className="h-3.5 w-3.5 text-rose-400" aria-hidden="true" />
                 {point.label}
-              </span>
-              <span className="mt-0.5 block text-xs text-slate-500">
-                {point.hint}
-              </span>
-            </span>
-          </li>
-        ))}
-      </ul>
-    </Card>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <GachaBall className="mx-auto h-40 w-40 shrink-0 sm:mx-0 sm:h-56 sm:w-56" />
+      </div>
+    </section>
   );
 }

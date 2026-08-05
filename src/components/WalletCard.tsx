@@ -81,7 +81,7 @@ export default function WalletCard() {
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">
                   Sisa Saldo Makan
                 </p>
-                <h3 className="text-3xl font-black text-slate-800 tracking-tight">
+                <h3 className="text-3xl font-bold text-slate-800 tracking-tight">
                   Rp {balance.toLocaleString("id-ID")}
                 </h3>
               </div>

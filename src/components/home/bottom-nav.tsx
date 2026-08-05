@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { History, Home, MapPin, Sparkles } from "lucide-react";
 
 /**
  * Navigasi bawah untuk layar sempit.
@@ -14,10 +15,10 @@ import { usePathname } from "next/navigation";
  */
 
 const ITEMS = [
-  { href: "/", label: "Beranda", icon: "🏠" },
-  { href: "/spin", label: "Spin", icon: "🎰" },
-  { href: "/map", label: "Peta", icon: "📍" },
-  { href: "/riwayat", label: "Riwayat", icon: "🕒" },
+  { href: "/", label: "Beranda", icon: Home },
+  { href: "/spin", label: "Spin", icon: Sparkles },
+  { href: "/map", label: "Peta", icon: MapPin },
+  { href: "/riwayat", label: "Riwayat", icon: History },
 ];
 
 export function BottomNav() {
@@ -38,13 +39,11 @@ export function BottomNav() {
               key={item.href}
               href={item.href}
               aria-current={active ? "page" : undefined}
-              className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-semibold transition-colors ${
+              className={`flex flex-1 flex-col items-center gap-1 py-2 text-[10px] font-medium transition-colors ${
                 active ? "text-rose-500" : "text-slate-400"
               }`}
             >
-              <span className="text-lg" aria-hidden="true">
-                {item.icon}
-              </span>
+              <item.icon className="h-5 w-5" aria-hidden="true" />
               {item.label}
             </Link>
           );
