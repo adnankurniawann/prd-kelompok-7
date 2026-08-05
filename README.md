@@ -67,14 +67,21 @@ Butuh **Node 20+** dan satu project Supabase.
 ### 1. Pasang
 
 ```bash
-git clone https://github.com/adnankurniawann/prd-kelompok-7.git
-cd prd-kelompok-7
+git clone https://github.com/adnankurniawann/gacha-makan.git
+cd gacha-makan
 npm install
 ```
 
-> Perhatikan foldernya bersarang: `prd-kelompok-7/prd-kelompok-7`. Kodenya ada
-> di yang **dalam** — salah masuk direktori adalah penyebab paling umum
+> **Kalau kamu memakai clone lama** dari sebelum repo ini diganti nama,
+> foldernya mungkin bersarang: `prd-kelompok-7/prd-kelompok-7`. Kodenya ada di
+> yang **dalam** — salah masuk direktori adalah penyebab paling umum
 > `npm run dev` gagal dengan `ENOENT: package.json`.
+>
+> Perbarui alamat remote-nya sekalian:
+>
+> ```bash
+> git remote set-url origin https://github.com/adnankurniawann/gacha-makan.git
+> ```
 
 ### 2. Environment
 
