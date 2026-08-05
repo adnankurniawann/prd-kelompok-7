@@ -14,6 +14,7 @@ import { usePathname } from "next/navigation";
 const LINKS = [
   { href: "/spin", label: "Spin" },
   { href: "/map", label: "Peta" },
+  { href: "/dompet", label: "Dompet" },
   { href: "/riwayat", label: "Riwayat" },
 ];
 

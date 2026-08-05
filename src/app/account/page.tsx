@@ -8,7 +8,7 @@ import { supabase } from "@/lib/supabase/client";
 import { AppHeader } from "@/components/home/app-header";
 import { BottomNav } from "@/components/home/bottom-nav";
 import { Card, MenuList, MenuRow, SectionHeader } from "@/components/ui/surface";
-import { History, LogOut, MapPin, RefreshCw, Sparkles } from "lucide-react";
+import { History, LogOut, MapPin, RefreshCw, Sparkles, Wallet } from "lucide-react";
 
 function getDisplayName(session: Session | null): string {
   if (!session) return "Tamu";
@@ -361,6 +361,12 @@ export default function AccountPage() {
                   icon={History}
                   label="Riwayat & simpanan"
                   hint="Spin terakhir dan tempat yang kamu simpan"
+                />
+                <MenuRow
+                  href="/dompet"
+                  icon={Wallet}
+                  label="Dompet makan"
+                  hint="Atur jatah bulanan dan pantau sisanya"
                 />
                 <MenuRow
                   href="/spin"

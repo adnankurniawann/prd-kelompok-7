@@ -87,45 +87,39 @@ export function AuthPanel({ className }: { className?: string }) {
 
   return (
     <div className={`w-full ${className}`}>
-      {anonymous && (
-        <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] leading-relaxed text-amber-800">
-          Kamu udah bisa spin tanpa akun. Simpan email cuma kalau mau riwayat
-          dan favoritmu tetap ada waktu ganti HP.
-        </p>
-      )}
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        {/* Label EMAIL yang dirapikan */}
-        <label className="flex flex-col gap-1.5">
-          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
-            E M A I L
-          </span>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="nama@kampus.ac.id"
-            required
-            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-rose-400 focus:bg-white focus:ring-2 focus:ring-rose-100"
-          />
-        </label>
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
+        {/* Placeholder-nya email umum, bukan email kampus. Menulis
+            "nama@kampus.ac.id" terbaca seperti syarat, dan orang yang tidak
+            punya email kampus akan mengira ia tidak boleh ikut. Email apa pun
+            bisa dipakai. */}
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="email kamu"
+          autoComplete="email"
+          required
+          className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-[15px] text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
+        />
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-xl bg-rose-500 px-4 py-3 text-sm font-bold text-white shadow-sm shadow-rose-500/30 transition-all hover:bg-rose-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 mt-2"
+          className="w-full rounded-lg bg-rose-500 px-4 py-3 text-[15px] font-semibold text-white transition-colors hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {loading ? "Mengirim..." : anonymous ? "Simpan Akun" : "Kirim Link"}
+          {loading ? "Mengirim…" : anonymous ? "Simpan akun" : "Kirim link"}
         </button>
       </form>
 
       {/* Pesan Error / Sukses */}
       {message && (
         <div
-          className={`mt-4 rounded-xl px-4 py-3 text-sm font-medium text-center ${
+          className={`mt-3 rounded-lg px-4 py-3 text-sm ${
             message.isError
-              ? "border border-rose-200 bg-rose-50 text-rose-600"
-              : "border border-emerald-200 bg-emerald-50 text-emerald-600"
+              ? "border border-rose-200 bg-rose-50 text-rose-700"
+              : "border border-emerald-200 bg-emerald-50 text-emerald-700"
           }`}
         >
           {message.text}
