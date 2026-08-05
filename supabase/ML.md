@@ -79,20 +79,73 @@ hangat.
 sampai ke database — mengisi `false` saat sebenarnya tidak tahu berarti menanam
 fitur palsu ke dalam data latih.
 
+## Fase 1 — fungsi fitur: **selesai**
+
+`src/lib/ml/features.ts` — `buildFeatureVector(input) → number[26]`. Murni:
+tidak menyentuh jaringan, tidak membaca jam, tidak membaca database. Semua
+yang berubah masuk lewat parameter.
+
+| Blok | Dim | Indeks |
+|---|---|---|
+| Jarak | 2 | 0–1 |
+| Harga | 2 | 2–3 |
+| Masakan (one-hot) | 12 | 4–15 |
+| Waktu | 4 | 16–19 |
+| Cuaca | 1 | 20 |
+| Afinitas user | 2 | 21–22 |
+| Popularitas | 2 | 23–24 |
+| Bias | 1 | 25 |
+
+`FEATURE_BLOCKS` dan `ablateBlock()` disiapkan untuk ablasi di Fase 2.
+
+### Kebocoran dicegah secara struktural
+
+`buildTrainingSet()` di `src/lib/ml/training.ts` memproses baris berurutan
+menurut `shown_at`, menghitung fitur dari pencacah yang isinya **hanya baris
+sebelumnya**, lalu memperbarui pencacah **sesudah** fiturnya dibuat. Tidak ada
+jalan bagi hasil sebuah baris untuk memengaruhi fiturnya sendiri.
+
+Itu ditulis di TypeScript, bukan sebagai SQL window function, dengan sengaja:
+fitur masakan bergantung pada `toCuisineSlot`, dan menulis ulang pemetaan itu
+di SQL berarti cepat atau lambat versi SQL dan versi TypeScript berbeda. Vektor
+saat pelatihan tidak akan sama dengan vektor saat penyajian untuk peristiwa
+yang sama, dan bug seperti itu tidak muncul di test mana pun sampai modelnya
+sudah dipakai orang.
+
+### Keputusan yang perlu diketahui sebelum menyentuh berkas ini
+
+**Dua kosakata kategori disatukan.** Data seed memakai istilah Google Maps
+berbahasa Inggris ("Chicken restaurant"), ingest OSM menghasilkan istilah
+Indonesia ("Ayam"). Keduanya jatuh ke slot yang sama. Daftar slotnya tetap dan
+pendek — one-hot yang tumbuh mengikuti isi database akan mengubah panjang
+vektor setiap ada kategori baru, dan model yang sudah dilatih langsung tidak
+cocok lagi.
+
+**"Restaurant" polos adalah nilai paling umum di data seed, dan ia jatuh ke
+`lainnya`.** Selama itu belum dikurasi, blok masakan praktis tidak membawa
+informasi untuk sebagian besar tempat. Itu masalah kualitas data (Fase B),
+bukan masalah model — dan ablasi di Fase 2 akan menunjukkannya.
+
+**Afinitas dan popularitas dihaluskan lalu dipusatkan pada nol.** Rasio 1/1
+dan 40/50 bukan bukti yang sama kuatnya; tanpa penghalusan, restoran yang baru
+sekali tayang dan kebetulan diterima akan terlihat sempurna dan langsung
+mendominasi. Dipusatkan supaya "belum ada riwayat" berarti nol — tidak
+mendorong ke arah mana pun.
+
+**Nilai yang tidak diketahui tetap netral, bukan ditebak.** Harga yang belum
+dikurasi memberi 0, bukan tingkat 2. Cuaca memakai +1/−1/0 supaya "tidak tahu"
+tidak bisa tertukar dengan "tidak hujan".
+
 ## Berikutnya
-
-**Fase 1 — fungsi fitur.** Satu fungsi murni `(user, restaurant, context) →
-R^26`, dengan tes ditulis sebelum logika bandit.
-
-Jebakan utamanya *target leakage*: fitur "accept rate historis user" harus
-dihitung **hanya dari baris dengan `shown_at` lebih awal** dari baris yang
-sedang dihitung. Kalau dihitung dari seluruh dataset, masa depan bocor ke masa
-lalu dan hasil evaluasinya akan terlihat spektakuler sekaligus tidak berarti.
 
 **Fase 2 — simulator dan baseline.** Ini inti ML-nya, dan bisa dikerjakan
 tanpa menunggu data nyata. Baseline yang wajib ada: uniform random, jarak
 terdekat, ε-greedy, LinUCB, Thompson Sampling, dan oracle untuk menghitung
 regret.
+
+Ablasi memakai `ablateBlock(x, "masakan")` dan seterusnya — dinolkan, bukan
+dibuang, supaya panjang vektornya tetap dan hasilnya bisa dibandingkan langsung
+dengan model penuh.
 
 **Jangan mulai Fase 4 (replay/A-B) sebelum ada ~500 spin.** Sebelum itu tidak
 ada yang bisa dipelajari, dan angka apa pun yang keluar akan punya interval
