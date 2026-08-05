@@ -11,6 +11,7 @@ import {
   RestaurantStatsCards,
   RestaurantStatsSkeleton,
 } from "@/components/home/restaurant-stats";
+import { Hero } from "@/components/home/hero";
 import { UsageGuide } from "@/components/home/usage-guide";
 import { Card, IconTile, SectionHeader } from "@/components/ui/surface";
 import WalletCard from "@/components/WalletCard";
@@ -57,29 +58,36 @@ export default async function Home() {
       <AppHeader displayName={displayName} isAnonymous={isAnonymous} />
 
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 px-4 pt-3 md:px-6">
-        {/* Panduan di paling atas — bukan di dasar kolom kanan seperti
-            sebelumnya. */}
-        <UsageGuide forceOpen={firstTime} />
-
-        {/* Kartu aksi utama. Rata, satu warna, tanpa gradien. */}
-        <Card className="flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-[15px] font-bold tracking-tight text-slate-900">
-              {firstTime ? "Satu tombol, satu warung" : "Siap makan siang?"}
-            </p>
-            <p className="mt-0.5 text-xs text-slate-500">
-              {firstTime
-                ? "Kami cuma kasih satu pilihan, biar kamu berhenti scroll."
-                : `Kamu sudah spin ${spinCount}× sejauh ini.`}
-            </p>
-          </div>
-          <Link
-            href="/spin"
-            className="shrink-0 rounded-lg bg-rose-500 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-rose-600 active:scale-95"
-          >
-            Spin
-          </Link>
-        </Card>
+        {/* Pengunjung baru dapat hero yang menjelaskan produknya; yang sudah
+            pernah spin tidak perlu dijelaskan lagi dan langsung dapat tombol.
+            Menyodorkan hero yang sama tiap kali buka aplikasi cuma memakan
+            layar. */}
+        {firstTime ? (
+          <>
+            <Hero />
+            <UsageGuide forceOpen />
+          </>
+        ) : (
+          <>
+            <UsageGuide />
+            <Card className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-[15px] font-bold tracking-tight text-slate-900">
+                  Siap makan siang?
+                </p>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Kamu sudah spin {spinCount}× sejauh ini.
+                </p>
+              </div>
+              <Link
+                href="/spin"
+                className="shrink-0 rounded-lg bg-rose-500 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-rose-600 active:scale-95"
+              >
+                Spin
+              </Link>
+            </Card>
+          </>
+        )}
 
         {/* Petak ikon: pola yang sudah dikenal orang dari aplikasi belanja.
             Empat kolom, label pendek, tanpa deskripsi. */}
