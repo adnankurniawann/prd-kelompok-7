@@ -1,114 +1,151 @@
-# Gacha Makannnn
+# Gacha Makan
 
-Dibuat oleh Kelompok 7 PRD 
-Anggota:
+Aplikasi web untuk mahasiswa yang lapar tapi tidak bisa memutuskan mau makan
+apa. Atur budget dan radius, tekan satu tombol, dapat satu warung — bukan
+daftar dua puluh pilihan yang justru membuat keputusannya makin berat.
 
-Rafi Pradipta Andira Sulistyo 13525051
-M. Adnan Kurniawan 13525071
-Kairenzo Vemil 13525063
-Sulthan Dhiyazka 13525124
-Muhammad Reffah 13525146
+Fokusnya sempit dengan sengaja: **Jatinangor.** Kami tidak akan menang dalam
+soal cakupan melawan Google Maps. Yang bisa dimenangkan adalah kurasi lokal di
+wilayah dua kilometer — jam buka yang benar, harga yang benar, dan warung yang
+memang dipakai mahasiswa.
 
+## Cara pakai
 
+1. Buka aplikasinya — **tidak perlu daftar.** Sesi dibuat otomatis
+2. Izinkan lokasi, atau pilih area sendiri kalau tidak mau
+3. Atur budget dan radius, tekan SPIN
+4. "Jadi ke sini", "Simpan buat nanti", atau spin lagi
 
-##  PANDUAN VIBECODING DENGAN AI (Cursor / ChatGPT / Claude / Gemini)
+Filter yang dipakai diingat untuk kunjungan berikutnya. Bisa dipasang ke home
+screen sebagai PWA.
 
-Kalau lu mau ngoding fitur lu pakai bantuan AI, lu tinggal nge-*copy* seluruh isi README ini dan jadikan prompt awal lu biar AI-nya paham konteks project kita. 
+## Tech stack
 
-**Contoh Prompt Awal buat AI lu:**
-> "Halo AI, saya mau mengerjakan project Next.js bernama 'Gacha Makan'. Silakan baca dokumen arsitektur dan pembagian tugas berikut ini:
-> 
-> [PASTE SELURUH ISI README INI DI SINI]
-> 
-> Tugas saya hari ini adalah sebagai [ISI ROLE LU: misal Front-End 1]. Saya mau membuat fitur [JELASKAN FITUR]. Tolong buatkan kodenya sesuai dengan folder structure dan tech stack yang ada di panduan."
+- **Next.js 16** (App Router) — monolith, front-end dan back-end satu repo
+- **Supabase Postgres + PostGIS** — pencarian radius dijalankan di database
+- **Tailwind CSS**, **Framer Motion** (dimuat setelah halaman siap)
+- **Vitest** — 137 tes
 
----
+## Arsitektur
 
-## 🛠 Tech Stack Project
-* **Framework:** Next.js (App Router)
-* **Database & Auth:** Supabase (PostgreSQL dengan PostGIS untuk hitung radius jarak)
-* **UI & Styling:** Tailwind CSS, Once UI, Framer Motion (untuk animasi gacha)
-* **Arsitektur:** Monolith (Front-End dan Back-End digabung dalam satu repo Next.js)
-
----
-
-##  Langkah Setup Lokal (WAJIB IKUTI URUTAN INI)
-
-Biar lu ga pusing dan ga kena *dependency error*, ikutin langkah ini pelan-pelan di terminal lu:
-
-**1. Tarik Kode dari GitHub**
-```bash
-git clone <isi-dengan-link-repo-adnan>
-cd prd-kelompok-7
-
-**2. Install Semua Library**
-```bash
-npm install
-
-**2. Bikin File .env lokal lu. (nanti URL key dll nya gw kirim di WA Group)**
-```bash
-cp .env.local.example .env.local
-
-**3. Nyalain Server**
-```bash
-npm run dev
-
-## Connect Supabase (Akun Kamu Sendiri)
-
-1. Buka Supabase Dashboard, pilih project kamu.
-2. Masuk ke Settings -> API.
-3. Copy 2 nilai ini:
-    - Project URL
-    - anon public key
-4. Di root project, buat file env lokal:
-
-```bash
-cp .env.local.example .env.local
+```
+src/app/api/       Route handler: spin, report, favorites, wallet
+src/lib/           Klien Supabase, rate limit, lokasi, sesi
+src/utils/         Logika murni: seleksi gacha, geo
+supabase/          Skema, migrasi, dan catatan keputusan
+scripts/           Ingest OSM, verifikasi RLS, ukur bundle
 ```
 
-5. Isi `.env.local`:
+Beberapa keputusan yang menentukan bentuk kodenya:
+
+**Klien tidak punya hak tulis ke tabel mana pun yang penting.** Anon key ada di
+bundle JavaScript yang dikirim ke browser, jadi apa pun yang bisa dilakukan
+pemegangnya harus dianggap sudah dilakukan orang asing. Perubahan skor
+kebersihan lewat fungsi `security definer`, bukan UPDATE langsung.
+
+**Jam buka punya tiga keadaan, bukan dua.** `true`, `false`, dan `null` untuk
+belum terdata. Menganggap "belum tahu" sebagai tutup akan mengosongkan katalog;
+menganggapnya buka akan mengirim orang ke warung yang sudah tutup.
+
+**Ingest OSM menghasilkan SQL untuk direview, bukan menulis langsung.**
+Deduplikasi berbasis kemiripan nama tidak pernah 100% benar, dan menggabungkan
+dua warung berbeda jadi satu baris jauh lebih sulit dibereskan daripada membaca
+daftarnya dulu.
+
+**Setiap penayangan hasil spin dicatat beserta konteks yang dibekukan saat itu,**
+termasuk peluang kebijakan memilihnya. Bukan analytics — ini fondasi data untuk
+model rekomendasi nanti.
+
+Catatan lengkap ada di `supabase/`: [KEAMANAN.md](supabase/KEAMANAN.md),
+[DATA.md](supabase/DATA.md), [AUTH.md](supabase/AUTH.md),
+[LOOP.md](supabase/LOOP.md), [METRIK.md](supabase/METRIK.md).
+
+## Menjalankan secara lokal
+
+Butuh Node 20+ dan satu project Supabase.
+
+```bash
+git clone https://github.com/adnankurniawann/prd-kelompok-7.git
+cd prd-kelompok-7
+npm install
+```
+
+Buat `.env.local`:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-public-key>
 ```
 
-6. Jalankan SQL schema dan seed di Supabase SQL Editor:
-    - Jalankan `supabase/schema.sql`
-    - Jalankan `supabase/seed.sql`
-7. Restart dev server:
+Di Supabase SQL Editor, jalankan **berurutan**:
+
+```
+supabase/schema.sql
+supabase/seed.sql
+supabase/migrations/20260804000001_rls_hardening.sql
+supabase/migrations/20260804000002_jam_buka_dan_kualitas_data.sql
+supabase/migrations/20260804000003_spin_events_dan_favorit.sql
+supabase/migrations/20260804000004_propensity_dan_metrik.sql
+```
+
+Lalu di Dashboard:
+
+- **Authentication → Providers → Anonymous sign-ins: aktif.** Tanpa ini tidak
+  ada riwayat yang tercatat sama sekali
+- **Database → Extensions → `pg_cron`**, lalu jadwalkan `mark_ignored_spins()`
+  (lihat [LOOP.md](supabase/LOOP.md))
+
+Buktikan kebijakan RLS-nya benar-benar berlaku:
+
+```bash
+node scripts/verify-rls.mjs
+```
+
+Skrip itu memakai anon key yang sama dengan frontend lalu **mencoba** operasi
+terlarang. Percobaan tulisnya dirancang tidak merusak. Jangan percaya bahwa
+policy sudah benar hanya karena aplikasinya masih jalan.
 
 ```bash
 npm run dev
 ```
 
-Catatan keamanan:
-- Jangan commit `.env.local`.
-- Jangan share service role key ke frontend.
-- Yang dipakai aplikasi ini hanya `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+## Perintah lain
 
-## Pembagian Tugas Dan Wilayah Kerja 
-Biar ga bingung dan ga ngerusak flow kerja, tolong ngoding hanya di folder wilayah kerja masing-masing. 
+```bash
+npm test                                        # 137 tes
+npm run build && node scripts/bundle-size.mjs   # ukuran bundle per halaman
+node scripts/ingest-osm.mjs --area=jatinangor   # tarik data dari OpenStreetMap
+```
 
-1. Tim Frontend
-    Area Kerja:  src/app/spin/, src/components/spin/, src/app/map/, src/app/page.tsx, src/components/map/ 
-2. Tim Backend 
-    Area kerja: 
-        *src/app/api/: Membuat Route Handlers / endpoint.
+## Status dan keterbatasan
 
-        *src/utils/: Menyimpan logic murni (seperti fungsi algoritma weighted random gacha dan kalkulasi jarak kordinat lokasi).
+Yang sudah jalan: pencarian radius dengan filter jam buka, laporan kebersihan
+dengan cooldown, sesi anonim, PWA, pencatatan umpan balik, kartu hasil yang
+bisa dibagikan, riwayat dan favorit.
 
-        *src/lib/supabase/: Mengatur koneksi ke database dan nyiapin fungsi fetch / insert data.
+Yang jujur perlu disebut:
 
-## Ngingetin Git Best Practice 
-    walaupun kaga dinilai, tapi terapin aja git best practice yang kayak di tubes alpro biar kaga puyeng. 
-    aturan main nih: 
-        1. JANGAN LANGSUNG NGODING DI BRANCH main!  
+- **Cakupan data masih tipis.** Baris hasil ingest OSM masuk tanpa harga, dan
+  tanpa harga ia tidak muncul di hasil spin. Kurasi manual belum selesai
+- **Jam buka belum terisi untuk sebagian besar tempat.** Yang belum terdata
+  tetap ditampilkan dengan label, bukan disembunyikan
+- **Rate limit disimpan di memori proses**, jadi di serverless hitungannya per
+  instance. Cukup untuk menahan skrip iseng, bukan penyerang serius
+- **Performa diukur lewat ukuran bundle**, belum lewat Lighthouse di perangkat
+  sungguhan
+- **Belum ada model rekomendasi.** Pemilihannya berbobot terhadap selisih
+  budget, dan bobot itu dicatat apa adanya di setiap baris log
 
-        2. Bikin Branch Baru: Sebelum mulai ngoding, bikin branch pakai konvensi tipe/nama-fitur (nama-kamu).
+## Kelompok 7 PRD
 
-            Contoh: feat/spin-animation (dipta) atau fix/map-pin (adnan).
+Rafi Pradipta Andira Sulistyo (13525051) · M. Adnan Kurniawan (13525071) ·
+Kairenzo Vemil (13525063) · Sulthan Dhiyazka (13525124) ·
+Muhammad Reffah (13525146)
 
-        3. Commit Message: Saat mau save kodingan ke Git, tulis message yang sama eksplisitnya dengan nama branch lu.
+## Berkontribusi
 
-            Contoh: feat: implement framer motion on spin button.
+Kerjakan di branch, buka PR ke `main`. Konvensi commit: `tipe: deskripsi`
+(`feat`, `fix`, `perf`, `docs`).
+
+Jangan commit `.env.local`. Jangan pernah menaruh `service_role` key di mana
+pun — aplikasi ini tidak memakainya, dan sebaiknya tetap begitu.

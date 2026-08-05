@@ -9,9 +9,14 @@
  */
 
 import { getEligibleRestaurants } from "@/lib/supabase/queries";
-import { calculateSpinWeights, weightedRandom, SPIN_POLICY } from "@/utils/gacha";
+import {
+  calculateSpinWeights,
+  selectionPropensity,
+  weightedRandomIndex,
+  SPIN_POLICY,
+} from "@/utils/gacha";
 import { clientIp, rateLimit, rateLimitHeaders } from "@/lib/rate-limit";
-import { recordSpinEvent } from "@/lib/supabase/events";
+import { recordSpinEvent, recordSpinMiss } from "@/lib/supabase/events";
 
 /** UUID apa pun versinya — session_id dibuat oleh crypto.randomUUID di klien. */
 const UUID_REGEX =
@@ -106,6 +111,10 @@ async function diagnoseEmptyResult(
 }
 
 export async function POST(request: Request): Promise<Response> {
+  // Dimulai sebelum apa pun, supaya angka p95 mencerminkan yang benar-benar
+  // dirasakan pemanggil — termasuk waktu parsing dan validasi.
+  const startedAt = Date.now();
+
   try {
     // ------------------------------------------------------------------
     // 0. Rate limit sebelum menyentuh database
@@ -313,6 +322,23 @@ export async function POST(request: Request): Promise<Response> {
       // Urutan saran mengikuti seberapa kecil pengorbanannya bagi pengguna:
       // menunggu jam buka yang salah lebih murah daripada jalan lebih jauh,
       // dan jalan lebih jauh lebih murah daripada membayar lebih mahal.
+      // Kandidat kosong tidak meninggalkan jejak di spin_events, padahal ini
+      // kegagalan yang paling penting diketahui: ia menandai lubang cakupan
+      // data, dan orang yang mengalaminya kemungkinan besar tidak kembali.
+      if (session_id) {
+        await recordSpinMiss({
+          sessionId: session_id,
+          userLat,
+          userLng,
+          radiusMeters: radiusNum,
+          budget: budgetNum,
+          onlyOpen,
+          wideningHelps: diagnosis.widerRadius !== null,
+          budgetHelps: diagnosis.higherBudget !== null,
+          closedOnly: diagnosis.closedForNow,
+        });
+      }
+
       const message = diagnosis.closedForNow
         ? "Warungnya ada, tapi semuanya lagi tutup jam segini."
         : diagnosis.widerRadius
@@ -345,7 +371,11 @@ export async function POST(request: Request): Promise<Response> {
     // ------------------------------------------------------------------
     // 7. Weighted random selection
     // ------------------------------------------------------------------
-    const selected = weightedRandom(candidates, weights);
+    // Indeksnya, bukan langsung itemnya: peluang draw ini hanya bisa dihitung
+    // kalau kita tahu kandidat mana yang keluar.
+    const selectedIndex = weightedRandomIndex(weights);
+    const selected = candidates[selectedIndex];
+    const policyScore = selectionPropensity(weights, selectedIndex);
 
     // ------------------------------------------------------------------
     // 8. Catat penayangannya — SETIAP penayangan, bukan hanya yang diterima.
@@ -363,6 +393,8 @@ export async function POST(request: Request): Promise<Response> {
           distanceMeters: selected.distance,
           candidateCount: candidates.length,
           policy: SPIN_POLICY,
+          policyScore,
+          latencyMs: Date.now() - startedAt,
         })
       : null;
 
