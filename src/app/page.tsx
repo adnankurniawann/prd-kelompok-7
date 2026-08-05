@@ -116,12 +116,21 @@ export default async function Home() {
           <UsageGuide forceOpen={firstTime} />
         </div>
 
-        {/* --- Bagian bawah: satu kolom, bukan dua -------------------------
-            Dua kolom berdampingan yang tingginya tidak pernah sama membuat
-            sisi kanan menggantung kosong. Ditumpuk saja: laporan dulu karena
-            ia berubah tiap hari, angka katalog paling bawah karena ia hampir
-            tidak pernah berubah. */}
+        {/* --- Isi katalog dulu, laporan menyusul ---------------------------
+            Angka katalog menjawab "ada apa aja sih di sini" — pertanyaan yang
+            muncul lebih dulu daripada "apa yang terjadi belakangan ini". */}
         <div className="mt-8">
+          <SectionHeader title="Yang sudah terdata" />
+          <Suspense fallback={<RestaurantStatsSkeleton />}>
+            <RestaurantStatsCards />
+          </Suspense>
+          <p className="mt-2 px-1 text-[11px] leading-relaxed text-slate-400">
+            Katalog masih terus dikurasi. Kalau warung langgananmu belum ada,
+            laporkan lewat peta.
+          </p>
+        </div>
+
+        <div className="mt-7">
           <SectionHeader
             title="Laporan kebersihan terbaru"
             action="Lihat peta"
@@ -130,16 +139,6 @@ export default async function Home() {
           <Suspense fallback={<HygieneReportsFeedSkeleton />}>
             <HygieneReportsFeed />
           </Suspense>
-        </div>
-
-        <div className="mt-6">
-          <Suspense fallback={<RestaurantStatsSkeleton />}>
-            <RestaurantStatsCards />
-          </Suspense>
-          <p className="mt-2 px-1 text-[11px] leading-relaxed text-slate-400">
-            Katalog masih terus dikurasi. Kalau warung langgananmu belum ada,
-            laporkan lewat peta.
-          </p>
         </div>
       </div>
 
