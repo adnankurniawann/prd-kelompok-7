@@ -71,8 +71,17 @@ describe("lingkungan simulasi", () => {
   });
 
   it("berulang persis untuk benih yang sama", () => {
-    const first = runAll(buildPolicies(), CONFIG);
-    const second = runAll(buildPolicies(), CONFIG);
+    // Sengaja jauh lebih pendek dari CONFIG: determinisme terbukti sama
+    // kuatnya dengan 300 ronde, dan menjalankan sepuluh simulasi penuh cuma
+    // untuk ini membuat seluruh suite lambat tanpa menambah keyakinan.
+    const quick: SimulationConfig = { ...CONFIG, rounds: 300 };
+    const policies = () => [
+      uniformRandomPolicy(quick.seed + 1),
+      thompsonSamplingPolicy(FEATURE_DIM, quick.seed + 3),
+    ];
+
+    const first = runAll(policies(), quick);
+    const second = runAll(policies(), quick);
 
     expect(first.results.map((r) => r.cumulativeRegret)).toEqual(
       second.results.map((r) => r.cumulativeRegret),

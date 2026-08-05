@@ -183,6 +183,13 @@ describe("POST /api/spin", () => {
         policyScore: 0.5,
         // null berarti TIDAK TAHU, bukan "tidak hujan".
         isRaining: null,
+        // Seluruh arm set, bukan cuma yang menang — tanpa ini evaluasi replay
+        // di Fase 4 mustahil.
+        candidateIds: [
+          "11111111-1111-1111-1111-111111111111",
+          "22222222-2222-2222-2222-222222222222",
+        ],
+        candidateDistancesM: [420, 900],
       }),
     );
     expect(recordSpinEventMock.mock.calls[0][0].latencyMs).toBeGreaterThanOrEqual(0);
