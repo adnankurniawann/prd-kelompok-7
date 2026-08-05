@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Dices, MapPin, ShieldCheck, UtensilsCrossed } from "lucide-react";
 
 import { getRestaurantById } from "@/lib/supabase/queries";
 
@@ -43,10 +44,10 @@ export default async function HasilPage({ params }: Params) {
           Gacha Makan hari ini
         </p>
 
-        <div className="mt-4 rounded-2xl border-2 border-rose-100 bg-white p-6 shadow-sm">
-          <div className="text-4xl" aria-hidden="true">
-            🎲
-          </div>
+        <div className="mt-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-50">
+            <Dices className="h-5 w-5 text-rose-500" aria-hidden="true" />
+          </span>
           <h1 className="mt-3 text-2xl font-bold leading-tight tracking-tight text-slate-900">
             {restaurant.name}
           </h1>
@@ -56,10 +57,10 @@ export default async function HasilPage({ params }: Params) {
               Rp {restaurant.price_tier?.toLocaleString("id-ID") ?? "—"}
             </span>
             <span className="rounded-lg border border-slate-100 bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700">
-              🍴 {restaurant.category ?? "Umum"}
+              <UtensilsCrossed className="mr-1 inline h-3.5 w-3.5 text-slate-400" aria-hidden="true" />{restaurant.category ?? "Umum"}
             </span>
             <span className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700">
-              🛡️ {restaurant.hygiene_score}
+              <ShieldCheck className="mr-1 inline h-3.5 w-3.5 text-slate-400" aria-hidden="true" />{restaurant.hygiene_score}
             </span>
           </div>
         </div>
@@ -75,7 +76,7 @@ export default async function HasilPage({ params }: Params) {
           href={`/map?restaurant_id=${encodeURIComponent(restaurant.id)}`}
           className="mt-2.5 block w-full rounded-xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
         >
-          📍 Lihat di peta
+          <MapPin className="mr-1.5 inline h-4 w-4" aria-hidden="true" />Lihat di peta
         </Link>
       </div>
     </main>

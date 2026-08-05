@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { AppHeader } from "@/components/home/app-header";
-import { Star } from "lucide-react";
+import { Bookmark, History, Star } from "lucide-react";
 import { BottomNav } from "@/components/home/bottom-nav";
 import { Card, SectionHeader } from "@/components/ui/surface";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -63,22 +63,33 @@ export default async function RiwayatPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Halaman ini hampir selalu kosong bagi pengunjung baru, dan keadaan kosong
+  // yang cuma berbunyi "sesi belum siap" terbaca seperti halaman rusak atau
+  // belum jadi. Jadi ia menjelaskan apa yang AKAN muncul di sini, bukan
+  // melaporkan kegagalan.
   if (!user) {
     return (
-      <main className="min-h-screen bg-slate-50 px-5 py-16 font-sans text-slate-800">
-        <div className="mx-auto max-w-md text-center">
-          <h1 className="text-xl font-bold tracking-tight">Riwayat</h1>
+      <main className="min-h-screen bg-slate-100 pb-24 font-sans text-slate-800 md:pb-12">
+        <AppHeader session={false} />
+        <div className="mx-auto max-w-md px-4 pt-10 text-center md:px-6">
+          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50">
+            <History className="h-6 w-6 text-rose-500" aria-hidden="true" />
+          </span>
+          <h1 className="mt-4 text-xl font-semibold tracking-tight text-slate-900">
+            Belum ada yang tercatat
+          </h1>
           <p className="mt-2 text-sm leading-relaxed text-slate-500">
-            Sesi kamu belum siap. Coba buka halaman spin dulu, lalu balik ke
-            sini.
+            Setiap kali kamu spin, hasilnya muncul di sini — termasuk tempat
+            yang kamu simpan buat nanti.
           </p>
           <Link
             href="/spin"
-            className="mt-6 inline-block rounded-xl bg-rose-500 px-5 py-3 text-sm font-bold text-white"
+            className="mt-6 inline-block rounded-xl bg-rose-500 px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-rose-600"
           >
-            Ke halaman spin
+            Spin pertama kamu
           </Link>
         </div>
+        <BottomNav />
       </main>
     );
   }
@@ -107,10 +118,13 @@ export default async function RiwayatPage() {
           <SectionHeader title="Tersimpan" action="Spin lagi" actionHref="/spin" />
 
           {favorites.length === 0 ? (
-            <Card>
-              <p className="text-sm leading-relaxed text-slate-400">
-                Belum ada yang disimpan. Tekan &ldquo;Simpan buat nanti&rdquo; di
-                hasil spin.
+            <Card className="flex items-center gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100">
+                <Bookmark className="h-4 w-4 text-slate-400" aria-hidden="true" />
+              </span>
+              <p className="text-[13px] leading-relaxed text-slate-500">
+                Belum ada. Tekan &ldquo;Simpan buat nanti&rdquo; di hasil spin,
+                dan tempatnya muncul di sini.
               </p>
             </Card>
           ) : (
@@ -137,10 +151,16 @@ export default async function RiwayatPage() {
           <SectionHeader title="Spin terakhir" />
 
           {history.length === 0 ? (
-            <Card>
-              <p className="text-sm leading-relaxed text-slate-400">
+            <Card className="flex items-center justify-between gap-3">
+              <p className="text-[13px] leading-relaxed text-slate-500">
                 Belum ada spin yang tercatat.
               </p>
+              <Link
+                href="/spin"
+                className="shrink-0 rounded-lg bg-rose-500 px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-rose-600"
+              >
+                Spin
+              </Link>
             </Card>
           ) : (
             <ul className="space-y-2">

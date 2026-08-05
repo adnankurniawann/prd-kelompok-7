@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Check, Share2 } from "lucide-react";
 
 /**
  * Membagikan hasil gacha ke grup WA/Line.
@@ -62,9 +63,17 @@ export function ShareResultButton({
     <button
       type="button"
       onClick={handleShare}
-      className="w-full rounded-xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-600 transition-all hover:bg-slate-50 active:scale-[0.98]"
+      className="w-full rounded-xl border border-slate-200 bg-white py-3 text-sm font-medium text-slate-600 transition-all hover:bg-slate-50 active:scale-[0.98]"
     >
-      {copied ? "✅ Tautan tersalin" : "📤 Bagikan ke grup"}
+      {copied ? (
+        <span className="inline-flex items-center justify-center gap-2">
+          <Check className="h-4 w-4" aria-hidden="true" /> Tautan tersalin
+        </span>
+      ) : (
+        <span className="inline-flex items-center justify-center gap-2">
+          <Share2 className="h-4 w-4" aria-hidden="true" /> Bagikan ke grup
+        </span>
+      )}
     </button>
   );
 }
