@@ -28,6 +28,12 @@ vi.mock("@/utils/gacha", () => ({
   SPIN_POLICY: "weighted_budget_v1",
 }));
 
+vi.mock("@/lib/weather", () => ({
+  currentIsRaining: () => null,
+  needsRefresh: () => false,
+  refreshWeather: vi.fn(),
+}));
+
 vi.mock("@/lib/supabase/events", () => ({
   recordSpinEvent: recordSpinEventMock,
   recordSpinMiss: recordSpinMissMock,
@@ -175,6 +181,8 @@ describe("POST /api/spin", () => {
         // Peluang draw ini. Tanpa angka ini, log tidak bisa dipakai untuk
         // evaluasi off-policy yang tak bias.
         policyScore: 0.5,
+        // null berarti TIDAK TAHU, bukan "tidak hujan".
+        isRaining: null,
       }),
     );
     expect(recordSpinEventMock.mock.calls[0][0].latencyMs).toBeGreaterThanOrEqual(0);

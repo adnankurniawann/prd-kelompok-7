@@ -17,6 +17,7 @@ import {
 } from "@/utils/gacha";
 import { clientIp, rateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { recordSpinEvent, recordSpinMiss } from "@/lib/supabase/events";
+import { currentIsRaining, needsRefresh, refreshWeather } from "@/lib/weather";
 
 /** UUID apa pun versinya — session_id dibuat oleh crypto.randomUUID di klien. */
 const UUID_REGEX =
@@ -395,8 +396,17 @@ export async function POST(request: Request): Promise<Response> {
           policy: SPIN_POLICY,
           policyScore,
           latencyMs: Date.now() - startedAt,
+          // Dibaca dari cache saja. Kalau dingin, tercatat null — spin tidak
+          // pernah menunggu jaringan demi satu kolom fitur.
+          isRaining: currentIsRaining(userLat, userLng),
         })
       : null;
+
+    // Penyegaran cuaca dilepas setelah nilainya dibaca, jadi ia hanya
+    // menyiapkan spin BERIKUTNYA dan tidak pernah menahan yang ini.
+    if (needsRefresh(userLat, userLng)) {
+      void refreshWeather(userLat, userLng);
+    }
 
     // ------------------------------------------------------------------
     // 9. Return success response with the 6 required fields

@@ -30,6 +30,13 @@ export interface SpinEventContext {
   policyScore: number;
   /** Lama pemrosesan permintaan, untuk metrik p95. */
   latencyMs: number;
+  /**
+   * Cuaca saat penayangan. `null` berarti **tidak tahu**, bukan "tidak hujan".
+   *
+   * Perbedaan itu harus dipertahankan sampai ke database: mengisi `false` saat
+   * sebenarnya tidak tahu berarti menanam fitur palsu ke dalam data latih.
+   */
+  isRaining: boolean | null;
 }
 
 /** Konteks spin yang berakhir tanpa kandidat sama sekali. */
@@ -134,6 +141,7 @@ export async function recordSpinEvent(
         hour_local: hourLocal,
         day_of_week: dayOfWeek,
         is_weekend: isWeekend,
+        is_raining: context.isRaining,
         policy: context.policy,
         policy_score: context.policyScore,
         candidate_n: context.candidateCount,
