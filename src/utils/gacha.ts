@@ -61,23 +61,62 @@ export function weightedRandom<T>(items: T[], weights: number[]): T {
     );
   }
 
+  return items[weightedRandomIndex(weights)];
+}
+
+/**
+ * Same draw as `weightedRandom`, but returns the index it landed on.
+ *
+ * Needed because the caller has to know *which* candidate was drawn in order
+ * to record the probability that draw had — see `selectionPropensity`.
+ *
+ * @throws Error if `weights` is empty or every weight is ≤ 0.
+ */
+export function weightedRandomIndex(weights: number[]): number {
+  if (weights.length === 0) {
+    throw new Error("weightedRandomIndex: 'weights' array must not be empty.");
+  }
+
   const totalWeight = weights.reduce((sum, w) => sum + w, 0);
   if (totalWeight <= 0) {
     throw new Error(
-      "weightedRandom: all weights are ≤ 0; at least one weight must be positive."
+      "weightedRandomIndex: all weights are ≤ 0; at least one weight must be positive."
     );
   }
 
   // Cumulative weight selection
   let random = Math.random() * totalWeight;
 
-  for (let i = 0; i < items.length; i++) {
+  for (let i = 0; i < weights.length; i++) {
     random -= weights[i];
     if (random <= 0) {
-      return items[i];
+      return i;
     }
   }
 
-  // Fallback: return the last item (handles floating-point edge cases)
-  return items[items.length - 1];
+  // Fallback: return the last index (handles floating-point edge cases)
+  return weights.length - 1;
+}
+
+/**
+ * Probability that this policy would draw `index` from `weights`.
+ *
+ * This number is what makes the logs usable for honest offline evaluation.
+ * Unbiased replay assumes every candidate had an equal chance; ours did not,
+ * because cheaper places carry more weight. Recording the actual probability
+ * lets a later evaluation divide it back out (inverse propensity scoring)
+ * instead of quietly inheriting a bias nobody accounted for.
+ *
+ * Without it, the only honest options later are to throw the logs away or to
+ * publish a number that is wrong in a direction we cannot even estimate.
+ *
+ * @returns A value in (0, 1]. Returns 0 when the weights are unusable.
+ */
+export function selectionPropensity(weights: number[], index: number): number {
+  if (index < 0 || index >= weights.length) return 0;
+
+  const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+  if (totalWeight <= 0) return 0;
+
+  return weights[index] / totalWeight;
 }

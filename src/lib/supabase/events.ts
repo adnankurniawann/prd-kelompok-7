@@ -20,6 +20,29 @@ export interface SpinEventContext {
   /** Berapa kandidat yang lolos filter saat penayangan ini. */
   candidateCount: number;
   policy: string;
+  /**
+   * Peluang kebijakan memilih kandidat ini, dalam (0, 1].
+   *
+   * Inilah yang membuat log ini bisa dipakai untuk evaluasi off-policy yang
+   * jujur. Pemilihan kita berbobot, bukan seragam, jadi tanpa angka ini
+   * evaluasi apa pun akan mewarisi bias yang tidak bisa ditaksir besarnya.
+   */
+  policyScore: number;
+  /** Lama pemrosesan permintaan, untuk metrik p95. */
+  latencyMs: number;
+}
+
+/** Konteks spin yang berakhir tanpa kandidat sama sekali. */
+export interface SpinMissContext {
+  sessionId: string;
+  userLat: number;
+  userLng: number;
+  radiusMeters: number;
+  budget: number;
+  onlyOpen: boolean;
+  wideningHelps: boolean;
+  budgetHelps: boolean;
+  closedOnly: boolean;
 }
 
 const JAKARTA_TIME_ZONE = "Asia/Jakarta";
@@ -112,7 +135,9 @@ export async function recordSpinEvent(
         day_of_week: dayOfWeek,
         is_weekend: isWeekend,
         policy: context.policy,
+        policy_score: context.policyScore,
         candidate_n: context.candidateCount,
+        latency_ms: context.latencyMs,
       })
       .select("id")
       .single();
@@ -126,6 +151,46 @@ export async function recordSpinEvent(
   } catch (error) {
     console.warn("[recordSpinEvent] Gagal mencatat penayangan:", error);
     return null;
+  }
+}
+
+/**
+ * Mencatat spin yang berakhir tanpa kandidat.
+ *
+ * Ini kegagalan yang paling penting diketahui: ia menandai lubang cakupan data
+ * di radius tertentu, dan orang yang mengalaminya kemungkinan besar tidak
+ * kembali. Tanpa dicatat, ia tidak meninggalkan jejak apa pun.
+ *
+ * Seperti recordSpinEvent, semua kegagalan diserap.
+ */
+export async function recordSpinMiss(context: SpinMissContext): Promise<void> {
+  try {
+    const supabase = await createSupabaseServerClient();
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return;
+
+    const { error } = await supabase.from("spin_misses").insert({
+      user_id: user.id,
+      session_id: context.sessionId,
+      user_lat: context.userLat,
+      user_lng: context.userLng,
+      radius_m: context.radiusMeters,
+      budget: context.budget,
+      only_open: context.onlyOpen,
+      widening_helps: context.wideningHelps,
+      budget_helps: context.budgetHelps,
+      closed_only: context.closedOnly,
+    });
+
+    if (error) {
+      console.warn("[recordSpinMiss] Gagal mencatat:", error.message);
+    }
+  } catch (error) {
+    console.warn("[recordSpinMiss] Gagal mencatat:", error);
   }
 }
 

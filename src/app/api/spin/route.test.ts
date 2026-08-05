@@ -3,13 +3,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const {
   getEligibleRestaurantsMock,
   calculateSpinWeightsMock,
-  weightedRandomMock,
+  weightedRandomIndexMock,
+  selectionPropensityMock,
   recordSpinEventMock,
+  recordSpinMissMock,
 } = vi.hoisted(() => ({
   getEligibleRestaurantsMock: vi.fn(),
   calculateSpinWeightsMock: vi.fn(),
-  weightedRandomMock: vi.fn(),
+  weightedRandomIndexMock: vi.fn(),
+  selectionPropensityMock: vi.fn(),
   recordSpinEventMock: vi.fn(),
+  recordSpinMissMock: vi.fn(),
 }));
 
 vi.mock("@/lib/supabase/queries", () => ({
@@ -19,12 +23,14 @@ vi.mock("@/lib/supabase/queries", () => ({
 
 vi.mock("@/utils/gacha", () => ({
   calculateSpinWeights: calculateSpinWeightsMock,
-  weightedRandom: weightedRandomMock,
+  weightedRandomIndex: weightedRandomIndexMock,
+  selectionPropensity: selectionPropensityMock,
   SPIN_POLICY: "weighted_budget_v1",
 }));
 
 vi.mock("@/lib/supabase/events", () => ({
   recordSpinEvent: recordSpinEventMock,
+  recordSpinMiss: recordSpinMissMock,
 }));
 
 import { POST } from "@/app/api/spin/route";
@@ -49,6 +55,8 @@ describe("POST /api/spin", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     __resetRateLimits();
+    // Nilai default supaya tiap tes tidak perlu mengulanginya.
+    selectionPropensityMock.mockReturnValue(0.5);
   });
 
   it("returns the selected restaurant for a valid request", async () => {
@@ -64,15 +72,7 @@ describe("POST /api/spin", () => {
       },
     ]);
     calculateSpinWeightsMock.mockReturnValue([5000]);
-    weightedRandomMock.mockReturnValue({
-      id: "11111111-1111-1111-1111-111111111111",
-      name: "Ayam Geprek",
-      category: "Ayam",
-      price_tier: 15000,
-      hygiene_score: 90,
-      distance: 123,
-      is_open: true,
-    });
+    weightedRandomIndexMock.mockReturnValue(0);
 
     const response = await POST(spinRequest(VALID_BODY));
 
@@ -146,7 +146,7 @@ describe("POST /api/spin", () => {
     ];
     getEligibleRestaurantsMock.mockResolvedValue(candidates);
     calculateSpinWeightsMock.mockReturnValue([5000, 8000]);
-    weightedRandomMock.mockReturnValue(candidates[0]);
+    weightedRandomIndexMock.mockReturnValue(0);
     recordSpinEventMock.mockResolvedValue("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
 
     const response = await POST(
@@ -163,15 +163,21 @@ describe("POST /api/spin", () => {
 
     // candidate_n adalah jumlah kandidat SAAT ITU, bukan dihitung ulang nanti.
     // Kebijakannya juga harus jujur: pemilihannya berbobot, bukan seragam.
-    expect(recordSpinEventMock).toHaveBeenCalledWith({
-      sessionId: "99999999-9999-4999-8999-999999999999",
-      restaurantId: "11111111-1111-1111-1111-111111111111",
-      userLat: -6.92,
-      userLng: 107.77,
-      distanceMeters: 420,
-      candidateCount: 2,
-      policy: "weighted_budget_v1",
-    });
+    expect(recordSpinEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sessionId: "99999999-9999-4999-8999-999999999999",
+        restaurantId: "11111111-1111-1111-1111-111111111111",
+        userLat: -6.92,
+        userLng: 107.77,
+        distanceMeters: 420,
+        candidateCount: 2,
+        policy: "weighted_budget_v1",
+        // Peluang draw ini. Tanpa angka ini, log tidak bisa dipakai untuk
+        // evaluasi off-policy yang tak bias.
+        policyScore: 0.5,
+      }),
+    );
+    expect(recordSpinEventMock.mock.calls[0][0].latencyMs).toBeGreaterThanOrEqual(0);
   });
 
   it("tetap menjawab 200 walau pencatatan gagal", async () => {
@@ -186,7 +192,7 @@ describe("POST /api/spin", () => {
     };
     getEligibleRestaurantsMock.mockResolvedValue([candidate]);
     calculateSpinWeightsMock.mockReturnValue([5000]);
-    weightedRandomMock.mockReturnValue(candidate);
+    weightedRandomIndexMock.mockReturnValue(0);
     // recordSpinEvent menyerap errornya sendiri dan menjawab null.
     recordSpinEventMock.mockResolvedValue(null);
 
