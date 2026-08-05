@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { Dices, History, MapPin, Sparkles } from "lucide-react";
+import { Dices, History, MapPin } from "lucide-react";
 import { Suspense } from "react";
 
 import { AppHeader } from "@/components/home/app-header";
 import { BottomNav } from "@/components/home/bottom-nav";
+import { Hero } from "@/components/home/hero";
 import {
   HygieneReportsFeed,
   HygieneReportsFeedSkeleton,
@@ -12,7 +13,6 @@ import {
   RestaurantStatsCards,
   RestaurantStatsSkeleton,
 } from "@/components/home/restaurant-stats";
-import { Hero } from "@/components/home/hero";
 import { UsageGuide } from "@/components/home/usage-guide";
 import { Card, IconTile, SectionHeader } from "@/components/ui/surface";
 import WalletCard from "@/components/WalletCard";
@@ -21,10 +21,12 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 /**
  * Beranda.
  *
- * Urutannya mengikuti apa yang dibutuhkan orang, bukan apa yang paling banyak
- * kodenya: panduan, aksi utama, pintasan, baru angka dan feed. Statistik
- * katalog menarik untuk kami yang membuatnya, tapi tidak menolong siapa pun
- * memutuskan mau makan apa.
+ * SATU AKSI UTAMA PER LAYAR. Sebelumnya ada tiga tautan "spin" sekaligus:
+ * tombol di hero, tombol di panduan, dan petak ikon. Tiga tombol yang menuju
+ * tempat yang sama bukan memudahkan — ia membuat orang berhenti sebentar untuk
+ * menebak apakah ketiganya benar-benar sama.
+ *
+ * Sekarang: satu tombol spin yang besar, dan petak ikon berisi tujuan LAIN.
  */
 
 export const dynamic = "force-dynamic";
@@ -36,9 +38,6 @@ export default async function Home() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Sesi anonim punya user_id sungguhan tapi tidak punya nama. Sebelumnya
-  // halaman ini memperlakukan "ada sesi" sama dengan "sudah punya akun", jadi
-  // pengunjung baru disambut "Selamat datang kembali" dengan nama kosong.
   const isAnonymous = user?.is_anonymous === true;
   const metadata = user?.user_metadata ?? {};
   const displayName: string | null =
@@ -55,62 +54,53 @@ export default async function Home() {
   const firstTime = spinCount === 0;
 
   return (
-    <main className="min-h-screen bg-slate-100 pb-24 font-sans text-slate-800 md:pb-10">
+    <main className="min-h-screen bg-slate-100 pb-24 font-sans text-slate-800 md:pb-12">
       <AppHeader displayName={displayName} isAnonymous={isAnonymous} />
 
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 px-4 pt-3 md:px-6">
-        {/* Pengunjung baru dapat hero yang menjelaskan produknya; yang sudah
-            pernah spin tidak perlu dijelaskan lagi dan langsung dapat tombol.
-            Menyodorkan hero yang sama tiap kali buka aplikasi cuma memakan
-            layar. */}
+      <div className="mx-auto w-full max-w-5xl px-4 pt-4 md:px-6">
+        {/* --- Aksi utama. Satu-satunya tombol spin di halaman ini. --------- */}
         {firstTime ? (
-          <>
-            <Hero />
-            <UsageGuide forceOpen />
-          </>
+          <Hero />
         ) : (
-          <>
-            <UsageGuide />
-            <Card className="flex items-center justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-[15px] font-semibold tracking-tight text-slate-900">
-                  Siap makan siang?
-                </p>
-                <p className="mt-0.5 text-xs text-slate-500">
-                  Kamu sudah spin {spinCount}× sejauh ini.
-                </p>
-              </div>
-              <Link
-                href="/spin"
-                className="shrink-0 rounded-lg bg-rose-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-rose-600 active:scale-95"
-              >
-                Spin
-              </Link>
-            </Card>
-          </>
+          <Card className="flex items-center justify-between gap-4 p-5">
+            <div className="min-w-0">
+              <p className="text-lg font-semibold tracking-tight text-slate-900">
+                Siap makan siang?
+              </p>
+              <p className="mt-0.5 text-[13px] text-slate-500">
+                Kamu sudah spin {spinCount}× sejauh ini.
+              </p>
+            </div>
+            <Link
+              href="/spin"
+              className="shrink-0 rounded-xl bg-rose-500 px-6 py-3.5 text-[15px] font-semibold text-white shadow-lg shadow-rose-500/25 transition-all hover:bg-rose-600 active:scale-[0.98]"
+            >
+              Spin
+            </Link>
+          </Card>
         )}
 
-        {/* Petak ikon: pola yang sudah dikenal orang dari aplikasi belanja.
-            Empat kolom, label pendek, tanpa deskripsi. */}
-        <Card>
-          <div className="grid grid-cols-4 gap-1">
-            <IconTile href="/spin" icon={Sparkles} label="Spin" tone="rose" />
-            <IconTile href="/blind" icon={Dices} label="Blind" tone="slate" />
-            <IconTile href="/map" icon={MapPin} label="Peta" tone="sky" />
-            <IconTile href="/riwayat" icon={History} label="Riwayat" tone="amber" />
-          </div>
-        </Card>
+        {/* --- Tujuan lain. Tidak ada "Spin" di sini; ia sudah di atas. ----- */}
+        <nav className="mt-3 grid grid-cols-3 rounded-xl border border-slate-200 bg-white">
+          <IconTile href="/blind" icon={Dices} label="Blind gacha" tone="slate" />
+          <IconTile href="/map" icon={MapPin} label="Peta" tone="sky" />
+          <IconTile href="/riwayat" icon={History} label="Riwayat" tone="amber" />
+        </nav>
 
-        {user && !firstTime && <WalletCard />}
+        {user && !firstTime && (
+          <div className="mt-3">
+            <WalletCard />
+          </div>
+        )}
 
         {isAnonymous && !firstTime && (
-          <Card className="border-amber-200 bg-amber-50">
+          <Card className="mt-3 border-amber-200 bg-amber-50">
             <p className="text-sm font-semibold text-amber-900">
               Riwayatmu belum aman
             </p>
-            <p className="mt-1 text-xs leading-relaxed text-amber-800">
-              Kamu belum punya akun. Simpan email sekali saja, biar riwayat dan
-              favoritmu tetap ada waktu ganti HP.
+            <p className="mt-1 text-[13px] leading-relaxed text-amber-800">
+              Simpan email sekali saja, biar riwayat dan favoritmu tetap ada
+              waktu ganti HP.
             </p>
             <Link
               href="/login"
@@ -121,20 +111,35 @@ export default async function Home() {
           </Card>
         )}
 
-        <div className="grid gap-3 md:grid-cols-2">
-          <div>
-            <SectionHeader title="Laporan terbaru" action="Peta" actionHref="/map" />
-            <Suspense fallback={<HygieneReportsFeedSkeleton />}>
-              <HygieneReportsFeed />
-            </Suspense>
-          </div>
+        {/* --- Panduan, sekarang tanpa tombolnya sendiri -------------------- */}
+        <div className="mt-6">
+          <UsageGuide forceOpen={firstTime} />
+        </div>
 
-          <div>
-            <SectionHeader title="Isi katalog" />
-            <Suspense fallback={<RestaurantStatsSkeleton />}>
-              <RestaurantStatsCards />
-            </Suspense>
-          </div>
+        {/* --- Bagian bawah: satu kolom, bukan dua -------------------------
+            Dua kolom berdampingan yang tingginya tidak pernah sama membuat
+            sisi kanan menggantung kosong. Ditumpuk saja: laporan dulu karena
+            ia berubah tiap hari, angka katalog paling bawah karena ia hampir
+            tidak pernah berubah. */}
+        <div className="mt-8">
+          <SectionHeader
+            title="Laporan kebersihan terbaru"
+            action="Lihat peta"
+            actionHref="/map"
+          />
+          <Suspense fallback={<HygieneReportsFeedSkeleton />}>
+            <HygieneReportsFeed />
+          </Suspense>
+        </div>
+
+        <div className="mt-6">
+          <Suspense fallback={<RestaurantStatsSkeleton />}>
+            <RestaurantStatsCards />
+          </Suspense>
+          <p className="mt-2 px-1 text-[11px] leading-relaxed text-slate-400">
+            Katalog masih terus dikurasi. Kalau warung langgananmu belum ada,
+            laporkan lewat peta.
+          </p>
         </div>
       </div>
 
