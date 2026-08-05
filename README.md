@@ -91,6 +91,7 @@ supabase/migrations/20260804000002_jam_buka_dan_kualitas_data.sql
 supabase/migrations/20260804000003_spin_events_dan_favorit.sql
 supabase/migrations/20260804000004_propensity_dan_metrik.sql
 supabase/migrations/20260804000005_konteks_cuaca.sql
+supabase/migrations/20260804000006_kandidat_spin.sql
 ```
 
 Lalu di Dashboard:

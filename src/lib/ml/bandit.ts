@@ -93,6 +93,20 @@ export class BayesianLinearModel {
       this.b[i] += reward * x[i];
     }
   }
+
+  /**
+   * Faktor Cholesky dari `σ²A⁻¹`, yaitu `L` dengan `L Lᵀ = σ²A⁻¹`.
+   *
+   * Ini satu-satunya bagian posterior yang mahal dihitung, dan ia tidak
+   * berubah di antara pembaruan. Menyimpannya di artefak model berarti
+   * penyajian online cukup mengalikan `L z` — tidak ada dekomposisi yang perlu
+   * diulang tiap permintaan.
+   */
+  covarianceCholesky(): Matrix {
+    return cholesky(
+      this.aInverse.map((row) => row.map((value) => value * this.sigma * this.sigma)),
+    );
+  }
 }
 
 function argmax(scores: number[]): number {

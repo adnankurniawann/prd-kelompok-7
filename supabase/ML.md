@@ -221,24 +221,86 @@ Hasil simulasi **bukan bukti sistem bekerja pada manusia.**
 Angka di atas hanya bukti bahwa modelnya belajar **kalau dunianya seperti yang
 diasumsikan**. Buktinya pada manusia baru datang di Fase 4.
 
+## Fase 3 — serving tanpa layanan Python: **selesai**
+
+`src/lib/ml/model.ts`. Inferensi cuma satu perkalian matriks-vektor 26×26 —
+tidak butuh Python, tidak butuh FastAPI, tidak butuh container tambahan, tidak
+butuh cold start serverless kedua. Arsitekturnya tetap monolith Next.js.
+
+Terukur **di bawah 0,01 ms per pemilihan** untuk 20 kandidat, dan ada tes yang
+gagal kalau ia melewati 1 ms.
+
+### Artefak model
+
+JSON berisi `θ̂`, faktor Cholesky dari `σ²A⁻¹`, hiperparameter, jumlah contoh,
+dan **daftar nama fitur menurut urutannya saat dilatih**.
+
+Nama fitur itu bukan hiasan. Kalau seseorang menyisipkan satu blok fitur di
+tengah, seluruh bobot bergeser satu posisi — modelnya tetap "jalan" dan
+rekomendasinya jadi omong kosong tanpa satu pun error. `parseModelArtifact`
+menolak memuat artefak yang susunannya tidak cocok, jadi kegagalannya terjadi
+saat memuat, bukan saat merekomendasikan.
+
+Cholesky dihitung saat pelatihan dan ikut disimpan. Penyajian tidak melakukan
+dekomposisi apa pun; yang tersisa saat permintaan datang hanyalah `θ̃ = θ̂ + Lz`
+lalu argmax.
+
+### Pelatihannya TypeScript, bukan Python
+
+Roadmap menyarankan Python. Untuk proyek ini itu justru berbahaya: fitur
+dibangun oleh `buildFeatureVector`, dan menulis ulangnya di Python berarti dua
+implementasi yang cepat atau lambat berbeda. Vektor saat pelatihan tidak akan
+sama dengan vektor saat penyajian — alasan yang sama seperti kenapa ekstraksi
+data latih tidak ditulis sebagai SQL window function di Fase 1.
+
+Satu bahasa, satu fungsi fitur, satu perilaku.
+
+### Arm set sekarang dicatat
+
+Migrasi `20260804000006_kandidat_spin.sql` menambah `candidate_ids` dan
+`candidate_distances_m` ke `spin_events`.
+
+Ini prasyarat keras Fase 4. Evaluasi replay bertanya: "seandainya kebijakan
+baru memilih pada konteks yang sama, apakah pilihannya sama dengan yang
+tercatat?" Pertanyaan itu tidak bisa dijawab kalau yang tersimpan cuma satu
+restoran yang menang. Seperti `policy_score`, kolom ini murah dibuat sekarang
+dan mustahil dibuat nanti.
+
+### Bandit BELUM menyajikan apa pun
+
+Disengaja. `/api/spin` masih memakai `weighted_budget_v1`, dan model ini hanya
+dimuat dan diuji, tidak dipasang.
+
+Roadmap benar soal urutannya: shadow mode dulu, lalu replay, dan baru deploy
+kalau estimasinya memang lebih baik. Memasang model yang belum dievaluasi
+justru merugikan.
+
+Shadow scoring dirancang berjalan **offline** dari log, bukan di dalam
+permintaan. Menghitung fitur seluruh kandidat saat penayangan butuh statistik
+historis per kandidat — satu round trip database tambahan di jalur yang p95-nya
+baru saja mulai kita ukur, untuk informasi yang sama persis bisa didapat
+belakangan dari `candidate_ids`.
+
+Satu keterbatasan yang harus disebut: kategori dan harga kandidat
+direkonstruksi dari katalog saat analisis, bukan dibekukan per kandidat. Untuk
+dua kolom yang jarang dikurasi itu galatnya kecil dan bisa diperkirakan —
+berbeda dari waktu dan cuaca, yang berubah terus dan karena itu memang
+dibekukan.
+
 ## Berikutnya
 
-**Fase 3 — serving tanpa layanan Python.** Model linear berarti inferensi cuma
-satu perkalian matriks-vektor 26×26: tidak butuh Python, tidak butuh layanan
-terpisah, tidak butuh cold start serverless kedua. Latihan offline
-menghasilkan JSON berisi `θ̂` dan Cholesky dari `σ²A⁻¹`; route handler
-memuatnya, menarik `θ̃ = θ̂ + Lz`, lalu memilih argmax.
+**Fase 4 — replay dan A/B.**
 
-Seluruh aljabar yang dibutuhkan sudah ada di `linalg.ts` dan sudah teruji.
+Replay polos **tidak sah di sini**, karena kebijakan pengumpulnya berbobot.
+Pakai inverse propensity scoring dengan `policy_score` (lihat bagian koreksi
+di atas).
 
-**Shadow mode dulu.** Sebelum bandit benar-benar memilih: jalankan diam-diam,
-catat apa yang *akan* ia pilih, tapi tetap tampilkan hasil kebijakan sekarang.
-Setelah beberapa ratus baris, jalankan evaluasi replay. Kalau estimasinya tidak
-lebih baik dari yang sekarang, jangan deploy.
+**Jangan mulai sebelum ada ~500 spin.** Sebelum itu tidak ada yang bisa
+dipelajari, dan angka apa pun yang keluar akan punya interval kepercayaan yang
+melewati nol.
 
-**Jangan mulai Fase 4 (replay/A-B) sebelum ada ~500 spin.** Sebelum itu tidak
-ada yang bisa dipelajari, dan angka apa pun yang keluar akan punya interval
-kepercayaan yang melewati nol.
+Saat melaporkan hasilnya nanti, laporkan apa adanya — termasuk kalau tidak
+signifikan. Lihat bagian akhir `METRIK.md`.
 
 ## Yang belum: deploy
 

@@ -37,6 +37,17 @@ export interface SpinEventContext {
    * sebenarnya tidak tahu berarti menanam fitur palsu ke dalam data latih.
    */
   isRaining: boolean | null;
+
+  /**
+   * Seluruh kandidat yang lolos filter, termasuk yang tidak terpilih.
+   *
+   * Tanpa arm set, evaluasi replay di Fase 4 mustahil: tidak ada cara
+   * menanyakan apa yang AKAN dipilih kebijakan lain pada konteks yang sama.
+   * Dicatat sekarang karena tidak bisa direkonstruksi belakangan.
+   */
+  candidateIds: string[];
+  /** Jarak tiap kandidat dalam meter, sejajar indeks dengan candidateIds. */
+  candidateDistancesM: number[];
 }
 
 /** Konteks spin yang berakhir tanpa kandidat sama sekali. */
@@ -142,6 +153,8 @@ export async function recordSpinEvent(
         day_of_week: dayOfWeek,
         is_weekend: isWeekend,
         is_raining: context.isRaining,
+        candidate_ids: context.candidateIds,
+        candidate_distances_m: context.candidateDistancesM,
         policy: context.policy,
         policy_score: context.policyScore,
         candidate_n: context.candidateCount,

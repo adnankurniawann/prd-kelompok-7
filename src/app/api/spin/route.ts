@@ -393,6 +393,8 @@ export async function POST(request: Request): Promise<Response> {
           userLng,
           distanceMeters: selected.distance,
           candidateCount: candidates.length,
+          candidateIds: candidates.map((candidate) => candidate.id),
+          candidateDistancesM: candidates.map((candidate) => candidate.distance),
           policy: SPIN_POLICY,
           policyScore,
           latencyMs: Date.now() - startedAt,
