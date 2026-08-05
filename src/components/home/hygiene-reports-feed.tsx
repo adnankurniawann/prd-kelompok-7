@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ShieldAlert, ShieldCheck } from "lucide-react";
 import {
   getRecentHygieneReports,
   type RecentHygieneReport,
@@ -62,7 +63,11 @@ function ReportItem({
             : "border-emerald-100 bg-emerald-50 text-emerald-500"
         }`}
       >
-        {isRedFlag ? "⚠️" : "🛡️"}
+        {isRedFlag ? (
+          <ShieldAlert className="h-4 w-4" aria-hidden="true" />
+        ) : (
+          <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+        )}
       </div>
       <div className="flex-1 min-w-0">
         <h4

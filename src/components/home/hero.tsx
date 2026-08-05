@@ -63,14 +63,11 @@ export function Hero() {
             className="rise-in mt-6 flex flex-wrap items-center gap-2.5"
             style={{ animationDelay: "180ms" }}
           >
-            {/* Slate gelap, bukan merah. Merah sudah dipakai di mana-mana —
-                aksen ikon, badge, angka — jadi tombol merah tidak lagi
-                menonjol dari sekitarnya. Warna paling gelap di halaman yang
-                seluruhnya terang justru yang paling cepat ditemukan mata.
-                Tanpa ikon panah: teksnya sudah menjelaskan tujuannya. */}
+            {/* Rose, warna aksi aplikasi ini. Tanpa ikon panah — teksnya
+                sudah menjelaskan tujuannya. */}
             <Link
               href="/spin"
-              className="inline-flex items-center rounded-xl bg-slate-900 px-7 py-4 text-base font-semibold text-white shadow-lg shadow-slate-900/15 transition-all hover:bg-slate-800 active:scale-[0.98]"
+              className="inline-flex items-center rounded-xl bg-rose-500 px-7 py-4 text-base font-semibold text-white shadow-lg shadow-rose-500/25 transition-all hover:bg-rose-600 active:scale-[0.98]"
             >
               Spin sekarang
             </Link>

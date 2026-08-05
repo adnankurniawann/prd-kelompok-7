@@ -1,7 +1,8 @@
 "use client";
 
 import type { RestaurantMapItem } from "@/components/map/restaurant-map";
-import Link from "next/link";
+import { AppHeader } from "@/components/home/app-header";
+import { BottomNav } from "@/components/home/bottom-nav";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
@@ -14,7 +15,7 @@ const RestaurantMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-full min-h-[350px] items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-500">
+      <div className="flex h-full min-h-[350px] items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-500">
         Memuat peta...
       </div>
     ),
@@ -40,7 +41,7 @@ function statusTone(status: Restaurant["hygiene_status"]): string {
 
 function MapPageFallback() {
   return (
-    <main className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-20">
+    <main className="min-h-screen bg-slate-100 pb-24 font-sans text-slate-800 md:pb-12">
       <header className="sticky top-0 z-50 border-b border-slate-200/60 bg-white/80 px-4 py-3 shadow-sm backdrop-blur-lg md:px-8">
         <h1 className="text-lg font-bold text-slate-800">Peta Higienitas</h1>
       </header>
@@ -268,36 +269,14 @@ function MapPageContent() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-20">
-      {/* STICKY HEADER - Mengikuti gaya Home dan Spin yang Clean */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-200/60 px-4 md:px-8 py-3 shadow-sm flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/"
-            className="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center text-slate-600 hover:bg-sky-50 hover:text-sky-500 transition-all active:scale-95 font-bold"
-          >
-            ←
-          </Link>
-          <h1 className="text-lg font-bold text-slate-800 tracking-tight">
-            Peta Higienitas
-          </h1>
-        </div>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => void loadRestaurants()}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm active:scale-95"
-          >
-            🔄 Refresh
-          </button>
-        </div>
-      </header>
+    <main className="min-h-screen bg-slate-100 pb-24 font-sans text-slate-800 md:pb-12">
+      <AppHeader session={false} />
 
       <div className="mx-auto max-w-6xl w-full px-4 md:px-8 pt-6 flex flex-col lg:grid lg:grid-cols-[1.1fr_0.9fr] gap-6 lg:gap-8">
         {/* KOLOM KIRI: FILTER & PETA */}
         <section className="flex flex-col gap-5">
           {/* Panel Pencarian & Filter */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
+          <div className="rounded-xl border border-slate-200 bg-white p-5 space-y-4">
             <div className="flex flex-col sm:flex-row gap-4 sm:items-end">
               <label className="flex-1 space-y-1.5">
                 <span className="text-sm font-semibold text-slate-700">
@@ -377,7 +356,7 @@ function MapPageContent() {
           </div>
 
           {/* Peta interaktif Leaflet + OpenStreetMap */}
-          <div className="relative h-[350px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm md:h-[450px]">
+          <div className="relative h-[350px] overflow-hidden rounded-xl border border-slate-200 bg-white md:h-[450px]">
             {isLoading ? (
               <div className="flex h-full items-center justify-center bg-slate-50 text-sm font-medium text-slate-500">
                 Memuat peta restoran...
@@ -404,7 +383,7 @@ function MapPageContent() {
           </div>
 
           {/* Restaurant Mobile Picker (Drop list) */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:hidden">
+          <div className="rounded-xl border border-slate-200 bg-white p-4 lg:hidden">
             <div className="space-y-2">
               <span className="block text-sm font-semibold text-slate-700">
                 Pilih dari daftar
@@ -486,10 +465,10 @@ function MapPageContent() {
         </section>
 
         {/* KOLOM KANAN: DETAIL RESTORAN & REPORT */}
-        <aside className="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <aside className="flex flex-col gap-5 rounded-xl border border-slate-200 bg-white p-5">
           {/* Header Detail */}
           <div className="border-b border-slate-100 pb-4">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+            <p className="text-xs font-medium text-slate-500">
               Detail Restoran
             </p>
             <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
@@ -525,7 +504,7 @@ function MapPageContent() {
               {/* Stats Grid */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                  <p className="text-[11px] font-medium text-slate-500">
                     Skor Kebersihan
                   </p>
                   <p className="mt-1 text-3xl font-bold text-slate-800">
@@ -533,7 +512,7 @@ function MapPageContent() {
                   </p>
                 </div>
                 <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                  <p className="text-[11px] font-medium text-slate-500">
                     Status Verified
                   </p>
                   <p className="mt-1.5 text-lg font-bold text-slate-800">
@@ -547,7 +526,7 @@ function MapPageContent() {
                   </p>
                 </div>
                 <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                  <p className="text-[11px] font-medium text-slate-500">
                     Latitude
                   </p>
                   <p className="mt-1 text-sm font-semibold text-slate-700">
@@ -555,7 +534,7 @@ function MapPageContent() {
                   </p>
                 </div>
                 <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                  <p className="text-[11px] font-medium text-slate-500">
                     Longitude
                   </p>
                   <p className="mt-1 text-sm font-semibold text-slate-700">
@@ -618,6 +597,7 @@ function MapPageContent() {
           )}
         </aside>
       </div>
+      <BottomNav />
     </main>
   );
 }

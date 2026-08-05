@@ -132,7 +132,7 @@ export default function WalletCard() {
                 </div>
                 {percentage <= 20 && budget > 0 && (
                   <p className="text-xs text-rose-500 font-medium mt-3 flex items-center gap-1">
-                    ⚠️ Saldo menipis! Kurangi jajan mahal.
+                    Saldo menipis. Kurangi jajan mahal.
                   </p>
                 )}
               </div>
