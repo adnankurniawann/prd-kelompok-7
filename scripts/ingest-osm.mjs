@@ -1,4 +1,7 @@
-#!/usr/bin/env node
+// Tanpa shebang dengan sengaja: berkas ini diimpor oleh ingest-osm.test.mjs,
+// dan transform Vitest memindahkan import ke atas sehingga shebang-nya
+// terdorong ke tengah baris dan gagal di-parse. Skripnya toh selalu dijalankan
+// sebagai `node scripts/ingest-osm.mjs`.
 /**
  * Ingest restoran dari OpenStreetMap lewat Overpass API.
  *
