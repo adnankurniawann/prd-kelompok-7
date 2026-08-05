@@ -1,14 +1,24 @@
 import type { Metadata, Viewport } from "next";
-import { Poppins } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { SessionBootstrap } from "@/components/auth/session-bootstrap";
 import { RegisterServiceWorker } from "@/components/pwa/register-service-worker";
 
-// Setup Font Poppins agar tampilannya modern seperti prototipe
-const poppins = Poppins({
+/**
+ * Plus Jakarta Sans menggantikan Poppins.
+ *
+ * Poppins berbasis lingkaran geometris: tiap huruf hampir sama lebarnya, dan
+ * pada bobot tebal — yang dipakai di hampir seluruh aplikasi ini — teksnya
+ * jadi rapat dan berat. Itu sebagian besar penyebab tampilannya terasa kaku.
+ *
+ * Plus Jakarta Sans punya bentuk huruf yang lebih bervariasi, jadi kalimat
+ * masih terbaca enak pada bobot 400. Bobot 800 sengaja TIDAK diambil: ia
+ * tidak diunduh, jadi tidak ada yang bisa memakainya tanpa sadar.
+ */
+const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-poppins",
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-jakarta",
 });
 
 export const metadata: Metadata = {
@@ -50,7 +60,7 @@ export default function RootLayout({
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
         />
       </head>
-      <body className={`${poppins.variable} min-h-screen antialiased`}>
+      <body className={`${jakarta.variable} min-h-screen antialiased`}>
         {children}
         <SessionBootstrap />
         <RegisterServiceWorker />

@@ -1,15 +1,17 @@
 import Link from "next/link";
+import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 /**
  * Primitif tampilan bersama.
  *
- * Gayanya sengaja rata dan padat: kartu putih dengan garis tipis, sudut 12px,
- * tanpa gradien dan tanpa bayangan tebal. Sebelumnya tiap halaman memakai
- * `rounded-3xl`, gradien, dan lingkaran blur dekoratif yang berbeda-beda —
- * hasilnya terlihat ramai dan tiap halaman terasa seperti aplikasi yang lain.
+ * Dua perubahan yang paling menentukan wajahnya:
  *
- * Warnanya tidak berubah: rose-500 tetap warna aksi, slate untuk netral.
+ * 1. Ikonnya komponen `lucide-react`, bukan emoji. Emoji tampil berbeda di
+ *    tiap sistem operasi, tidak bisa diwarnai, dan ukurannya tidak pernah
+ *    sejajar dengan teks di sebelahnya.
+ * 2. Bobot hurufnya turun. Sebelumnya hampir semua teks `font-bold` atau
+ *    lebih tebal; kalau semuanya ditebalkan, tidak ada yang menonjol.
  */
 
 export function Card({
@@ -30,12 +32,6 @@ export function Card({
   );
 }
 
-/**
- * Judul bagian dengan tautan aksi di kanan.
- *
- * Pola yang sama dipakai di seluruh halaman, jadi mata tahu di mana mencari
- * "lihat semua" tanpa harus membacanya tiap kali.
- */
 export function SectionHeader({
   title,
   action,
@@ -46,14 +42,14 @@ export function SectionHeader({
   actionHref?: string;
 }) {
   return (
-    <div className="mb-3 flex items-baseline justify-between gap-3">
-      <h2 className="text-[15px] font-bold tracking-tight text-slate-900">
+    <div className="mb-2.5 flex items-baseline justify-between gap-3">
+      <h2 className="text-[15px] font-semibold tracking-tight text-slate-900">
         {title}
       </h2>
       {action && actionHref && (
         <Link
           href={actionHref}
-          className="shrink-0 text-xs font-bold text-rose-500 transition-colors hover:text-rose-600"
+          className="shrink-0 text-xs font-medium text-rose-500 transition-colors hover:text-rose-600"
         >
           {action}
         </Link>
@@ -62,21 +58,15 @@ export function SectionHeader({
   );
 }
 
-/**
- * Petak ikon untuk aksi cepat.
- *
- * Empat kolom di layar sempit, seperti baris kategori yang sudah dikenal orang
- * dari aplikasi belanja. Ikon bundar, label pendek, tanpa deskripsi — kalau
- * butuh dijelaskan, ia bukan aksi cepat.
- */
+/** Petak ikon untuk aksi cepat. Label pendek, tanpa deskripsi. */
 export function IconTile({
   href,
-  icon,
+  icon: Icon,
   label,
   tone = "rose",
 }: {
   href: string;
-  icon: string;
+  icon: LucideIcon;
   label: string;
   tone?: "rose" | "sky" | "amber" | "slate" | "emerald";
 }) {
@@ -91,38 +81,32 @@ export function IconTile({
   return (
     <Link
       href={href}
-      className="flex flex-col items-center gap-2 rounded-lg py-2 transition-colors hover:bg-slate-50 active:scale-95"
+      className="group flex flex-col items-center gap-2 rounded-lg py-2 transition-colors hover:bg-slate-50"
     >
       <span
-        className={`flex h-12 w-12 items-center justify-center rounded-full text-xl ${tones[tone]}`}
-        aria-hidden="true"
+        className={`flex h-12 w-12 items-center justify-center rounded-xl transition-transform group-active:scale-90 ${tones[tone]}`}
       >
-        {icon}
+        <Icon className="h-5 w-5" aria-hidden="true" />
       </span>
-      <span className="text-center text-[11px] font-semibold leading-tight text-slate-700">
+      <span className="text-center text-xs font-medium leading-tight text-slate-600">
         {label}
       </span>
     </Link>
   );
 }
 
-/**
- * Satu baris menu: ikon, label, keterangan opsional, tanda panah.
- *
- * Bentuk daftar seperti ini jauh lebih mudah dipindai daripada kotak-kotak
- * berukuran sama — mata cukup menyusuri satu kolom.
- */
+/** Satu baris menu: ikon, label, keterangan opsional, tanda panah. */
 export function MenuRow({
   href,
   onClick,
-  icon,
+  icon: Icon,
   label,
   hint,
   danger = false,
 }: {
   href?: string;
   onClick?: () => void;
-  icon: string;
+  icon: LucideIcon;
   label: string;
   hint?: string;
   danger?: boolean;
@@ -130,16 +114,15 @@ export function MenuRow({
   const content = (
     <>
       <span
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-base ${
-          danger ? "bg-rose-50" : "bg-slate-100"
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+          danger ? "bg-rose-50 text-rose-500" : "bg-slate-100 text-slate-500"
         }`}
-        aria-hidden="true"
       >
-        {icon}
+        <Icon className="h-4 w-4" aria-hidden="true" />
       </span>
       <span className="min-w-0 flex-1">
         <span
-          className={`block text-sm font-semibold ${danger ? "text-rose-600" : "text-slate-800"}`}
+          className={`block text-sm font-medium ${danger ? "text-rose-600" : "text-slate-800"}`}
         >
           {label}
         </span>
@@ -149,14 +132,14 @@ export function MenuRow({
           </span>
         )}
       </span>
-      <span className="shrink-0 text-slate-300" aria-hidden="true">
+      <span className="shrink-0 text-lg leading-none text-slate-300" aria-hidden="true">
         ›
       </span>
     </>
   );
 
   const className =
-    "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50 active:bg-slate-100";
+    "flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-slate-50 active:bg-slate-100";
 
   if (href) {
     return (
@@ -173,7 +156,6 @@ export function MenuRow({
   );
 }
 
-/** Pembungkus daftar `MenuRow` dengan garis pemisah antar baris. */
 export function MenuList({ children }: { children: ReactNode }) {
   return (
     <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white">

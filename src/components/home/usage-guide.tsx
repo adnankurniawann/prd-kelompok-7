@@ -96,7 +96,7 @@ export function UsageGuide({
         className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-left transition-colors hover:bg-slate-50"
       >
         <span className="text-sm font-semibold text-slate-600">Cara pakai</span>
-        <span className="text-xs font-bold text-rose-500">Lihat</span>
+        <span className="text-xs font-medium text-rose-500">Lihat</span>
       </button>
     );
   }
@@ -108,7 +108,7 @@ export function UsageGuide({
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-[15px] font-bold tracking-tight text-slate-900">
+          <h2 className="text-[15px] font-semibold tracking-tight text-slate-900">
             Bingung mau makan apa?
           </h2>
           <p className="mt-0.5 text-xs text-slate-500">
@@ -120,7 +120,7 @@ export function UsageGuide({
           <button
             type="button"
             onClick={close}
-            className="shrink-0 rounded-lg px-2 py-1 text-xs font-bold text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+            className="shrink-0 rounded-lg px-2 py-1 text-xs font-medium text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
           >
             Tutup
           </button>
@@ -130,11 +130,11 @@ export function UsageGuide({
       <ol className="mt-3 grid gap-2.5 sm:grid-cols-3">
         {STEPS.map((step) => (
           <li key={step.n} className="flex items-start gap-2.5">
-            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-rose-50 text-[11px] font-bold text-rose-500">
+            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-rose-50 text-[11px] font-semibold text-rose-500">
               {step.n}
             </span>
             <span className="min-w-0">
-              <span className="block text-[13px] font-semibold text-slate-800">
+              <span className="block text-[13px] font-medium text-slate-800">
                 {step.title}
               </span>
               <span className="mt-0.5 block text-xs leading-snug text-slate-500">
@@ -147,7 +147,7 @@ export function UsageGuide({
 
       <Link
         href="/spin"
-        className="mt-3.5 block w-full rounded-lg bg-rose-500 px-5 py-2.5 text-center text-sm font-bold text-white transition-colors hover:bg-rose-600 active:scale-[0.99]"
+        className="mt-3.5 block w-full rounded-lg bg-rose-500 px-5 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-rose-600 active:scale-[0.99]"
       >
         Mulai spin
       </Link>

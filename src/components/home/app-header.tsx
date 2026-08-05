@@ -39,7 +39,7 @@ export function AppHeader({
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-2.5 md:px-6">
         <Link href="/" className="shrink-0">
-          <span className="text-lg font-black tracking-tight text-slate-900">
+          <span className="text-lg font-bold tracking-tight text-slate-900">
             Gacha<span className="text-rose-500">Makan</span>
           </span>
         </Link>
@@ -52,7 +52,7 @@ export function AppHeader({
                 key={link.href}
                 href={link.href}
                 aria-current={active ? "page" : undefined}
-                className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                   active
                     ? "bg-rose-50 text-rose-600"
                     : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
@@ -68,14 +68,14 @@ export function AppHeader({
         {!session ? (
           <Link
             href="/account"
-            className="shrink-0 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 transition-colors hover:border-rose-200 hover:text-rose-600"
+            className="shrink-0 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:border-rose-200 hover:text-rose-600"
           >
             Akun
           </Link>
         ) : isAnonymous || !displayName ? (
           <Link
             href="/login"
-            className="shrink-0 rounded-lg bg-rose-500 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-rose-600"
+            className="shrink-0 rounded-lg bg-rose-500 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-rose-600"
           >
             Masuk
           </Link>
@@ -87,7 +87,7 @@ export function AppHeader({
             <span className="hidden max-w-[10ch] truncate text-sm font-semibold text-slate-700 sm:inline">
               {displayName}
             </span>
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-rose-500 text-sm font-bold text-white">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-rose-500 text-sm font-semibold text-white">
               {displayName.slice(0, 1).toUpperCase()}
             </span>
           </Link>

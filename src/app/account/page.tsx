@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase/client";
 import { AppHeader } from "@/components/home/app-header";
 import { BottomNav } from "@/components/home/bottom-nav";
 import { Card, MenuList, MenuRow, SectionHeader } from "@/components/ui/surface";
+import { History, LogOut, MapPin, RefreshCw, Sparkles } from "lucide-react";
 
 function getDisplayName(session: Session | null): string {
   if (!session) return "Tamu";
@@ -278,7 +279,7 @@ export default function AccountPage() {
             {/* Kartu profil. Rata, tanpa lingkaran blur dekoratif dan tanpa
                 nama sebesar judul halaman. */}
             <Card className="flex items-center gap-3.5">
-              <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-rose-500 text-lg font-bold text-white">
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-rose-500 text-base font-semibold text-white">
                 {isAnonymous ? (
                   initials
                 ) : (
@@ -292,7 +293,7 @@ export default function AccountPage() {
               </span>
 
               <div className="min-w-0 flex-1">
-                <p className="truncate text-base font-bold tracking-tight text-slate-900">
+                <p className="truncate text-base font-semibold tracking-tight text-slate-900">
                   {isAnonymous ? "Kamu belum punya akun" : liveDisplayName}
                 </p>
                 <p className="mt-0.5 truncate text-xs text-slate-500">
@@ -310,7 +311,7 @@ export default function AccountPage() {
               {isAnonymous && (
                 <Link
                   href="/login"
-                  className="shrink-0 rounded-lg bg-rose-500 px-3.5 py-2 text-xs font-bold text-white transition-colors hover:bg-rose-600"
+                  className="shrink-0 rounded-lg bg-rose-500 px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-rose-600"
                 >
                   Masuk
                 </Link>
@@ -321,7 +322,7 @@ export default function AccountPage() {
                 untuk hilang. */}
             {isAnonymous && (
               <Card className="border-amber-200 bg-amber-50">
-                <p className="text-sm font-bold text-amber-900">
+                <p className="text-sm font-semibold text-amber-900">
                   Simpan email, sekali saja
                 </p>
                 <p className="mt-1 text-xs leading-relaxed text-amber-800">
@@ -337,7 +338,7 @@ export default function AccountPage() {
                   <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                     Bergabung
                   </p>
-                  <p className="mt-1 text-sm font-bold text-slate-800">
+                  <p className="mt-1 text-sm font-semibold text-slate-800">
                     {createdAt}
                   </p>
                 </Card>
@@ -345,7 +346,7 @@ export default function AccountPage() {
                   <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                     Terakhir masuk
                   </p>
-                  <p className="mt-1 text-sm font-bold text-slate-800">
+                  <p className="mt-1 text-sm font-semibold text-slate-800">
                     {lastSignIn}
                   </p>
                 </Card>
@@ -357,19 +358,19 @@ export default function AccountPage() {
               <MenuList>
                 <MenuRow
                   href="/riwayat"
-                  icon="🕒"
+                  icon={History}
                   label="Riwayat & simpanan"
                   hint="Spin terakhir dan tempat yang kamu simpan"
                 />
                 <MenuRow
                   href="/spin"
-                  icon="🎰"
+                  icon={Sparkles}
                   label="Spin dengan filter"
                   hint="Atur budget, jarak, dan jam buka"
                 />
                 <MenuRow
                   href="/map"
-                  icon="📍"
+                  icon={MapPin}
                   label="Peta restoran"
                   hint="Lihat sebaran dan status kebersihan"
                 />
@@ -450,7 +451,7 @@ export default function AccountPage() {
                     <button
                       type="submit"
                       disabled={isSavingProfile}
-                      className="mt-1 rounded-lg bg-rose-500 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="mt-1 rounded-lg bg-rose-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {isSavingProfile
                         ? isUploadingAvatar
@@ -474,14 +475,14 @@ export default function AccountPage() {
               <MenuList>
                 <MenuRow
                   onClick={() => void handleRefreshSession()}
-                  icon="🔄"
+                  icon={RefreshCw}
                   label="Muat ulang data akun"
                   hint="Kalau perubahanmu belum kelihatan"
                 />
                 {session && !isAnonymous ? (
                   <MenuRow
                     onClick={() => void handleSignOut()}
-                    icon="🚪"
+                    icon={LogOut}
                     label={isSigningOut ? "Keluar…" : "Keluar akun"}
                     danger
                   />
