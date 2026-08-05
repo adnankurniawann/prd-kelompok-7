@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { MapPin } from "lucide-react";
 
 import {
   AREA_PRESETS,
@@ -122,8 +123,9 @@ export function LocationPicker({
           <span className="block text-[10px] font-bold uppercase tracking-wide text-slate-400">
             Cari di sekitar
           </span>
-          <span className="block truncate text-sm font-semibold text-slate-700">
-            📍 {describeLocation(value)}
+          <span className="flex items-center gap-1.5 truncate text-sm font-medium text-slate-700">
+            <MapPin className="h-3.5 w-3.5 shrink-0 text-rose-500" aria-hidden="true" />
+            {describeLocation(value)}
           </span>
         </span>
         <button

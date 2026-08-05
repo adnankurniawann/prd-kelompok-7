@@ -1,14 +1,35 @@
 import Link from "next/link";
+import { Bookmark, History, Smartphone } from "lucide-react";
+
 import { AuthPanel } from "@/components/auth/auth-panel";
+import { AppHeader } from "@/components/home/app-header";
 
 export const metadata = {
-  title: "Login | Gacha Makan",
-  description: "Masuk ke Gacha Makan dengan magic link email.",
+  title: "Masuk | Gacha Makan",
+  description: "Simpan riwayat dan favoritmu dengan satu link ke email.",
 };
 
 type LoginPageProps = {
   searchParams: Promise<{ error?: string; message?: string }>;
 };
+
+/**
+ * Halaman masuk.
+ *
+ * Dua hal yang diperbaiki dari versi sebelumnya:
+ *
+ * 1. Ia berdiri sendiri di tengah layar tanpa header, tanpa jalan kembali
+ *    selain satu tautan kecil di dasar kartu. Halaman yang memutus navigasi
+ *    seperti itu terasa seperti jalan buntu.
+ * 2. Judulnya "Login" tanpa menjelaskan apa pun. Padahal di aplikasi ini
+ *    masuk itu OPSIONAL — orang sudah bisa spin tanpa akun. Kalau tidak
+ *    dijelaskan apa untungnya, tidak ada alasan mengisi email.
+ */
+const BENEFITS = [
+  { icon: History, text: "Riwayat spin tetap ada" },
+  { icon: Bookmark, text: "Daftar simpanan ikut terbawa" },
+  { icon: Smartphone, text: "Bisa dibuka dari HP lain" },
+] as const;
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;
@@ -16,49 +37,52 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const callbackMessage = params.message;
 
   return (
-    <main className="min-h-screen bg-slate-50 font-sans flex flex-col items-center justify-center p-4 sm:p-6 selection:bg-rose-500 selection:text-white">
-      {/* Brand Header */}
-      <div className="mb-8 text-center">
-        <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
-          <span className="text-slate-900">Gacha</span>
-          <span className="text-rose-600">Makan</span>
-        </h1>
-      </div>
+    <main className="min-h-screen bg-slate-100 pb-16 font-sans text-slate-800">
+      <AppHeader session={false} />
 
-      {/* Login Card dengan sedikit warna latar (Soft Rose) */}
-      <div className="w-full max-w-[400px] rounded-3xl border border-rose-100 bg-rose-50/30 p-6 sm:p-8 shadow-sm backdrop-blur-sm">
-        {/* Judul ke tengah */}
-        <div className="mb-6 text-center">
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
-            Login
-          </h2>
-          <p className="mt-1.5 text-sm text-slate-500 leading-relaxed">
-            Masukkan email kamu di bawah. Kami akan mengirimkan link khusus agar
-            kamu bisa langsung masuk ke aplikasi.
-          </p>
-        </div>
+      <div className="mx-auto w-full max-w-md px-4 pt-8 md:px-6">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          Simpan punyamu
+        </h1>
+        <p className="mt-1.5 text-[15px] leading-relaxed text-slate-500">
+          Kamu sudah bisa spin tanpa akun. Email cuma dipakai supaya yang sudah
+          terkumpul tidak hilang.
+        </p>
+
+        <ul className="mt-5 space-y-2.5">
+          {BENEFITS.map((benefit) => (
+            <li
+              key={benefit.text}
+              className="flex items-center gap-2.5 text-sm text-slate-600"
+            >
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-rose-50">
+                <benefit.icon className="h-3.5 w-3.5 text-rose-500" aria-hidden="true" />
+              </span>
+              {benefit.text}
+            </li>
+          ))}
+        </ul>
 
         {authCallbackFailed ? (
-          <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-center text-sm font-medium text-rose-600">
+          <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
             {callbackMessage ??
-              "Login dari email gagal. Coba kirim magic link lagi."}
+              "Link dari email gagal dipakai. Coba kirim ulang."}
           </div>
         ) : null}
 
-        {/* Area Komponen AuthPanel */}
-        <div>
+        <div className="mt-5 rounded-xl border border-slate-200 bg-white p-5">
           <AuthPanel className="border-0 bg-transparent p-0 shadow-none" />
+          <p className="mt-4 text-xs leading-relaxed text-slate-400">
+            Tanpa password. Kami kirim satu link ke emailmu, tinggal dibuka.
+          </p>
         </div>
 
-        {/* Back to Home (Tanpa Logo Panah) */}
-        <div className="mt-6 pt-6 border-t border-slate-200/60 text-center">
-          <Link
-            href="/"
-            className="text-sm font-semibold text-slate-500 transition-colors hover:text-slate-900 active:scale-95 inline-block"
-          >
-            Kembali ke Beranda
-          </Link>
-        </div>
+        <Link
+          href="/spin"
+          className="mt-5 block text-center text-sm font-medium text-slate-500 transition-colors hover:text-slate-800"
+        >
+          Nanti aja, mau spin dulu
+        </Link>
       </div>
     </main>
   );

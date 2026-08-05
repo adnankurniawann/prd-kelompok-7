@@ -6,7 +6,19 @@ import { AnimatePresence, m } from "framer-motion";
 import { MotionProvider } from "@/components/motion/motion-provider";
 import { LocationPicker } from "@/components/location/location-picker";
 import { AppHeader } from "@/components/home/app-header";
-import { Bookmark, BookmarkCheck, MapPin } from "lucide-react";
+import {
+  Bookmark,
+  BookmarkCheck,
+  Clock,
+  Dices,
+  DoorClosed,
+  DoorOpen,
+  MapPin,
+  RotateCw,
+  ShieldCheck,
+  Utensils,
+  UtensilsCrossed,
+} from "lucide-react";
 import { BottomNav } from "@/components/home/bottom-nav";
 import { DEFAULT_AREA, type LocationChoice } from "@/lib/location";
 import {
@@ -274,12 +286,12 @@ export default function SpinPage() {
       });
 
       if (res.ok) {
-        setConfirmMessage("✅ Selamat makan! Saldo berhasil dipotong.");
+        setConfirmMessage("Selamat makan! Saldo sudah dipotong.");
       } else {
-        setConfirmMessage("⚠️ Gagal memotong saldo.");
+        setConfirmMessage("Saldo gagal dipotong.");
       }
     } catch {
-      setConfirmMessage("⚠️ Terjadi kesalahan jaringan.");
+      setConfirmMessage("Jaringan bermasalah. Coba lagi.");
     } finally {
       setIsConfirming(false);
     }
@@ -313,8 +325,6 @@ export default function SpinPage() {
     <MotionProvider>
           <main className="relative min-h-screen overflow-hidden bg-slate-100 pb-24 font-sans text-slate-900 selection:bg-rose-500 selection:text-white md:pb-10">
             {/* Background Decor */}
-            <div className="absolute top-0 inset-x-0 h-[500px] bg-gradient-to-b from-rose-100/50 via-slate-50 to-transparent z-0 pointer-events-none"></div>
-
             {/* Header yang sama dengan seluruh halaman lain, supaya jalan ke
                 peta dan riwayat selalu ada di tempat yang sama. */}
             <AppHeader session={false} />
@@ -323,37 +333,23 @@ export default function SpinPage() {
               {/* KOLOM KIRI: FILTERS */}
               <div className="lg:col-span-5 flex flex-col gap-6">
                 {/* Active Filter Summary */}
-                <div className="bg-gradient-to-br from-slate-800 to-slate-950 rounded-2xl p-6 text-white shadow-lg shadow-slate-900/10 relative overflow-hidden group">
-                  <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/5 rounded-full blur-xl"></div>
-                  <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-slate-400 mb-4">
-                    Parameter Aktif
-                  </p>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <p className="text-[10px] text-slate-400">Budget</p>
-                      <p className="text-2xl font-bold tracking-tight text-white/95">
-                        Rp {budget.toLocaleString("id-ID")}
-                      </p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[10px] text-slate-400">Radius</p>
-                      <p className="text-2xl font-bold tracking-tight text-white/95">
-                        {radius} m
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-4 pt-4 border-t border-white/10">
-                    <p className="text-[10px] text-slate-400 mb-1 tracking-wider uppercase font-medium">
-                      Kordinat GPS
+                <div className="flex divide-x divide-slate-100 rounded-xl border border-slate-200 bg-white">
+                  <div className="flex-1 px-4 py-3.5">
+                    <p className="text-xs text-slate-500">Budget</p>
+                    <p className="mt-0.5 text-lg font-semibold tabular-nums text-slate-900">
+                      Rp {budget.toLocaleString("id-ID")}
                     </p>
-                    <p className="text-xs font-medium text-slate-200">
-                      {lat.toFixed(5)}, {lng.toFixed(5)}
+                  </div>
+                  <div className="flex-1 px-4 py-3.5">
+                    <p className="text-xs text-slate-500">Radius</p>
+                    <p className="mt-0.5 text-lg font-semibold tabular-nums text-slate-900">
+                      {radius} m
                     </p>
                   </div>
                 </div>
 
                 {/* Control Panel - Dengan Slider Custom Berwarna */}
-                <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-6">
+                <div className="rounded-xl border border-slate-200 bg-white p-5 space-y-6">
                   {/* Slider Budget Custom */}
                   <div>
                     <div className="flex justify-between items-center mb-1">
@@ -445,7 +441,7 @@ export default function SpinPage() {
 
               {/* KOLOM KANAN: SPIN ACTION & RESULT */}
               <div className="lg:col-span-7 flex flex-col gap-6">
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 md:p-10 flex flex-col items-center justify-center relative overflow-hidden min-h-[360px]">
+                <div className="relative flex min-h-[360px] flex-col items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white p-6 md:p-10">
                   {/* Animasi Ring Cincin */}
                   <m.div
                     key={isSpinning ? "spinning" : "idle"}
@@ -485,7 +481,7 @@ export default function SpinPage() {
                         ? { repeat: Infinity, duration: 1 }
                         : { duration: 0.2 }
                     }
-                    className="relative z-10 w-40 h-40 sm:w-44 sm:h-44 rounded-full bg-gradient-to-b from-rose-400 to-rose-600 shadow-xl shadow-rose-500/40 text-white font-bold text-2xl flex flex-col items-center justify-center border-4 border-white active:scale-95 transition-all disabled:opacity-90"
+                    className="relative z-10 flex h-40 w-40 flex-col items-center justify-center rounded-full border-4 border-white bg-rose-500 text-2xl font-semibold text-white shadow-xl shadow-rose-500/30 transition-all hover:bg-rose-600 active:scale-95 disabled:opacity-90 sm:h-44 sm:w-44"
                   >
                     <m.div
                       animate={isSpinning ? { rotate: 1080 } : { rotate: 0 }}
@@ -494,9 +490,9 @@ export default function SpinPage() {
                           ? { duration: 2, ease: [0.25, 0.1, 0.25, 1] }
                           : { duration: 0 }
                       }
-                      className="text-4xl mb-2"
+                      className="mb-2"
                     >
-                      🍽️
+                      <Utensils className="h-9 w-9" aria-hidden="true" />
                     </m.div>
                     SPIN!
                   </m.button>
@@ -509,7 +505,7 @@ export default function SpinPage() {
                       className="mt-8 w-full max-w-sm p-4 bg-rose-50 border border-rose-100 rounded-xl text-center shadow-sm"
                     >
                       <p className="text-sm font-semibold text-rose-600 leading-snug">
-                        ⚠️ {error}
+                        {error}
                       </p>
 
                       {(canWidenRadius || canRaiseBudget || canIncludeClosed) && (
@@ -559,45 +555,42 @@ export default function SpinPage() {
                       initial={{ opacity: 0, y: 15, scale: 0.97 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.98 }}
-                      className="bg-white rounded-2xl border-2 border-emerald-100 shadow-sm p-6 relative overflow-hidden group hover:border-emerald-200 transition-colors"
+                      className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-5"
                     >
-                      <div className="absolute top-0 right-0 p-5 opacity-10 text-6xl group-hover:rotate-12 group-hover:scale-110 group-hover:text-emerald-500 transition-all duration-500">
-                        ✅
-                      </div>
-                      <div className="inline-block px-3 py-1 bg-emerald-100 text-emerald-700 rounded-md text-[10px] font-bold uppercase tracking-widest border border-emerald-200 mb-4 shadow-inner">
-                        Hasil Gacha Terpilih
-                      </div>
-                      <h3 className="text-2xl sm:text-3xl font-bold text-slate-800 tracking-tight mb-2">
+                      <p className="text-xs font-medium text-rose-500">
+                        Hasil buat kamu
+                      </p>
+                      <h3 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-[1.75rem]">
                         {result.name}
                       </h3>
                       <div className="flex flex-wrap gap-2.5 mt-3">
-                        <span className="px-3.5 py-1.5 bg-slate-50 rounded-lg text-xs font-semibold text-slate-700 border border-slate-100">
+                        <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
                           Rp {result.price_tier.toLocaleString("id-ID")}
                         </span>
-                        <span className="px-3.5 py-1.5 bg-slate-100 rounded-lg text-xs font-semibold text-slate-700 border border-slate-100">
-                          <MapPin className="inline h-3.5 w-3.5" aria-hidden="true" /> {formatMeters(result.distance)}
+                        <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
+                          <MapPin className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" /> {formatMeters(result.distance)}
                         </span>
-                        <span className="px-3.5 py-1.5 bg-slate-50 rounded-lg text-xs font-semibold text-slate-700 border border-slate-100">
-                          🍴 {result.category ?? "Umum"}
+                        <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
+                          <UtensilsCrossed className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" /> {result.category ?? "Umum"}
                         </span>
-                        <span className="px-3.5 py-1.5 bg-slate-100 rounded-lg text-xs font-semibold text-slate-700 border border-slate-100">
-                          🛡️ Score: {result.hygiene_score}
+                        <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
+                          <ShieldCheck className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" /> {result.hygiene_score}
                         </span>
                         {/* Tiga keadaan, bukan dua: "belum terdata" tidak boleh
                             menyamar jadi "buka". */}
                         {result.is_open === true && (
-                          <span className="px-3.5 py-1.5 bg-emerald-50 rounded-lg text-xs font-semibold text-emerald-700 border border-emerald-200">
-                            🟢 Buka sekarang
+                          <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700">
+                            <DoorOpen className="h-3.5 w-3.5" aria-hidden="true" /> Buka sekarang
                           </span>
                         )}
                         {result.is_open === false && (
-                          <span className="px-3.5 py-1.5 bg-rose-50 rounded-lg text-xs font-semibold text-rose-700 border border-rose-200">
-                            🔴 Lagi tutup
+                          <span className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700">
+                            <DoorClosed className="h-3.5 w-3.5" aria-hidden="true" /> Lagi tutup
                           </span>
                         )}
                         {result.is_open === null && (
-                          <span className="px-3.5 py-1.5 bg-amber-50 rounded-lg text-xs font-semibold text-amber-700 border border-amber-200">
-                            ⏰ Jam buka belum terdata
+                          <span className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700">
+                            <Clock className="h-3.5 w-3.5" aria-hidden="true" /> Jam buka belum terdata
                           </span>
                         )}
                       </div>
@@ -616,7 +609,7 @@ export default function SpinPage() {
                               disabled={isConfirming}
                               className="w-full bg-rose-500 text-white py-3.5 rounded-xl text-center text-sm font-bold shadow-md shadow-rose-500/30 transition-all hover:bg-rose-600 active:scale-[0.98] disabled:opacity-70 flex justify-center items-center gap-2"
                             >
-                              {isConfirming ? "Memproses..." : `🍽️ Konfirmasi Makan di Sini (- Rp ${result.price_tier.toLocaleString("id-ID")})`}
+                              {isConfirming ? "Memproses..." : `Jadi ke sini (- Rp ${result.price_tier.toLocaleString("id-ID")})`}
                             </button>
                       
                             {/* Simpan buat nanti — jawaban ketiga, bukan cuma
@@ -648,14 +641,14 @@ export default function SpinPage() {
                                 href={`/map?restaurant_id=${encodeURIComponent(result.id)}`}
                                 className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-slate-800 py-3.5 text-sm font-semibold !text-white shadow-sm transition-all hover:bg-slate-900 active:scale-[0.98]"
                               >
-                                <span className="text-base">📍</span>{" "}
+                                <MapPin className="h-4 w-4" aria-hidden="true" />{" "}
                                 <span className="!text-white">Lihat di Peta</span>
                               </Link>
                               <button
                                 onClick={handleSpin}
                                 className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-3.5 text-sm font-semibold text-slate-600 transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700 active:scale-[0.98]"
                               >
-                                <span className="text-base">🔄</span> Spin Ulang Takdir
+                                <RotateCw className="h-4 w-4" aria-hidden="true" /> Spin lagi
                               </button>
                             </div>
 
@@ -680,9 +673,9 @@ export default function SpinPage() {
                       key="empty-state"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      className="bg-white rounded-2xl border-2 border-dashed border-slate-200 p-10 text-center flex flex-col items-center justify-center min-h-[200px]"
+                      className="flex min-h-[180px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center"
                     >
-                      <span className="text-4xl mb-4 opacity-50">🎲</span>
+                      <Dices className="mb-3 h-8 w-8 text-slate-300" aria-hidden="true" />
                       <p className="text-sm font-medium text-slate-400 max-w-sm leading-relaxed">
                         Belum ada hasil spin takdir. Silakan atur budget dan radius
                         pencarian, lalu tekan tombol SPIN di atas!
