@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, m } from "framer-motion";
 import { MotionProvider } from "@/components/motion/motion-provider";
 import { LocationPicker } from "@/components/location/location-picker";
+import { AppHeader } from "@/components/home/app-header";
 import { DEFAULT_AREA, type LocationChoice } from "@/lib/location";
 import {
   getSpinSessionId,
@@ -312,18 +313,9 @@ export default function SpinPage() {
             {/* Background Decor */}
             <div className="absolute top-0 inset-x-0 h-[500px] bg-gradient-to-b from-rose-100/50 via-slate-50 to-transparent z-0 pointer-events-none"></div>
 
-            {/* STICKY HEADER */}
-            <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-200/60 px-4 md:px-8 py-3 shadow-sm flex items-center gap-3">
-              <Link
-                href="/"
-                className="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center text-slate-600 hover:bg-rose-50 hover:text-rose-500 transition-all active:scale-95 font-bold"
-              >
-                ←
-              </Link>
-              <h1 className="text-lg font-bold text-slate-800 tracking-tight">
-                Spin Gacha
-              </h1>
-            </header>
+            {/* Header yang sama dengan seluruh halaman lain, supaya jalan ke
+                peta dan riwayat selalu ada di tempat yang sama. */}
+            <AppHeader session={false} />
 
             <div className="relative z-10 mx-auto max-w-6xl w-full px-4 md:px-8 pt-6 flex flex-col lg:grid lg:grid-cols-12 gap-6 lg:gap-8">
               {/* KOLOM KIRI: FILTERS */}

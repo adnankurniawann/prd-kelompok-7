@@ -121,7 +121,14 @@ npm run dev
 npm test                                        # 137 tes
 npm run build && node scripts/bundle-size.mjs   # ukuran bundle per halaman
 node scripts/ingest-osm.mjs --area=jatinangor   # tarik data dari OpenStreetMap
+node scripts/csv-to-seed.mjs                    # ubah kurasi manual jadi SQL
 ```
+
+Untuk menambah restoran hasil kurasi manual: isi `data/kurasi-restoran.csv`,
+jalankan perintah terakhir, review SQL-nya di `supabase/generated/`, lalu
+tempel ke SQL Editor. Yang boleh disalin dari Google Maps hanya fakta — nama,
+koordinat, alamat, jam buka. **Jangan menyalin teks ulasan atau foto**;
+menyimpannya secara permanen melanggar ToS Google Maps Platform.
 
 ## Status dan keterbatasan
 

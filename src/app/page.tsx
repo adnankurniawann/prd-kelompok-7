@@ -1,3 +1,7 @@
+import Link from "next/link";
+import { Suspense } from "react";
+
+import { AppHeader } from "@/components/home/app-header";
 import {
   HygieneReportsFeed,
   HygieneReportsFeedSkeleton,
@@ -6,153 +10,205 @@ import {
   RestaurantStatsCards,
   RestaurantStatsSkeleton,
 } from "@/components/home/restaurant-stats";
+import { UsageGuide } from "@/components/home/usage-guide";
 import WalletCard from "@/components/WalletCard";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import Link from "next/link";
-import { Suspense } from "react";
+
+/**
+ * Beranda.
+ *
+ * Urutannya mengikuti apa yang dibutuhkan orang, bukan apa yang paling banyak
+ * kodenya: panduan dulu, aksi utama, baru angka dan feed. Statistik katalog
+ * menarik untuk kami yang membuatnya, tapi tidak menolong siapa pun memutuskan
+ * mau makan apa.
+ */
+
+export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const supabase = await createSupabaseServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
 
-  const metadata = session?.user?.user_metadata || {};
-  const displayName = metadata.full_name || metadata.name || session?.user?.email?.split("@")[0];
-  const avatarUrl = metadata.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(displayName || "User")}`;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Sesi anonim punya user_id sungguhan tapi tidak punya nama. Sebelumnya
+  // halaman ini memperlakukan "ada sesi" sama dengan "sudah punya akun", jadi
+  // pengunjung baru disambut "Selamat datang kembali" dengan nama kosong.
+  const isAnonymous = user?.is_anonymous === true;
+  const metadata = user?.user_metadata ?? {};
+  const displayName: string | null =
+    metadata.full_name || metadata.name || user?.email?.split("@")[0] || null;
+
+  // Berapa kali orang ini pernah spin — menentukan apakah beranda ini
+  // menyambut pendatang baru atau orang yang sudah tahu jalannya.
+  let spinCount = 0;
+  if (user) {
+    const { count } = await supabase
+      .from("spin_events")
+      .select("id", { count: "exact", head: true });
+    spinCount = count ?? 0;
+  }
+
+  const firstTime = spinCount === 0;
 
   return (
-    <main className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-20 selection:bg-rose-500 selection:text-white">
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-200/60 px-4 md:px-8 py-3 shadow-sm flex items-center justify-between transition-all">
-        <Link href="/" className="flex items-center gap-1">
-          <h1 className="text-xl md:text-2xl font-black tracking-tight text-slate-900">
-            Gacha<span className="text-rose-500">Makan</span>
-          </h1>
-        </Link>
+    <main className="min-h-screen bg-slate-50 pb-16 font-sans text-slate-800 selection:bg-rose-500 selection:text-white">
+      <AppHeader displayName={displayName} isAnonymous={isAnonymous} />
 
-        {session ? (
-          <Link
-            href="/account"
-            className="flex items-center gap-3 group cursor-pointer transition-transform active:scale-95"
-          >
-            <div className="text-right hidden sm:block">
-              <p className="text-[10px] font-medium uppercase tracking-widest text-slate-400">
-                Mahasiswa ITB
-              </p>
-              <p className="text-sm font-semibold text-slate-700 group-hover:text-rose-500 transition-colors">
-                {displayName}
-              </p>
-            </div>
-            <div className="h-9 w-9 rounded-full border-2 border-white shadow-sm overflow-hidden bg-slate-200 transition-transform group-hover:scale-105">
-              <img
-                src={avatarUrl}
-                alt="Profile"
-                className="w-full h-full object-cover"
-              />
-            </div>
-          </Link>
-        ) : (
-          <Link
-            href="/login"
-            className="flex items-center gap-3 group cursor-pointer transition-transform active:scale-95"
-          >
-            <div className="text-right hidden sm:block">
-              <p className="text-[10px] font-medium uppercase tracking-widest text-slate-400">
-                Pengguna Tamu
-              </p>
-              <p className="text-sm font-semibold text-slate-700 group-hover:text-rose-500 transition-colors">
-                Login Akun
-              </p>
-            </div>
-            <div className="h-9 w-9 rounded-full border-2 border-slate-200 bg-slate-100 flex items-center justify-center text-slate-400 transition-all group-hover:scale-105 group-hover:border-rose-200 group-hover:text-rose-500">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="w-5 h-5"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
-          </Link>
-        )}
-      </header>
+      <div className="mx-auto w-full max-w-6xl px-4 pt-5 md:px-8">
+        {/* Panduan di paling atas — bukan di dasar kolom kanan seperti
+            sebelumnya. Orang yang paling butuh justru yang tidak akan
+            menggulir sejauh itu. */}
+        <UsageGuide forceOpen={firstTime} />
+      </div>
 
-      <div className="mx-auto max-w-6xl w-full px-4 md:px-8 pt-6 flex flex-col md:flex-row gap-6 lg:gap-8">
-        <div className="flex-1 flex flex-col gap-6">
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 text-white shadow-lg shadow-slate-900/10 relative overflow-hidden group">
-            <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/5 rounded-full blur-3xl transition-transform duration-700 group-hover:scale-150"></div>
-            <p className="text-sm font-normal text-slate-300 mb-1">
-              Selamat datang kembali,
-            </p>
-            <h2 className="text-2xl font-semibold tracking-tight text-white/95">
-              Siap berburu makan siang?
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 pt-6 md:flex-row md:px-8 lg:gap-8">
+        <div className="flex flex-1 flex-col gap-6">
+          {/* Sambutan menyesuaikan keadaan, bukan selalu "kembali". */}
+          <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 p-6 text-white shadow-lg shadow-slate-900/10">
+            <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/5 blur-3xl" />
+            {firstTime ? (
+              <>
+                <p className="mb-1 text-sm text-slate-300">Halo,</p>
+                <h1 className="text-2xl font-semibold tracking-tight text-white/95">
+                  Satu tombol, satu warung.
+                </h1>
+                <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-300">
+                  Kami cuma kasih satu pilihan — biar kamu berhenti scroll dan
+                  mulai makan.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="mb-1 text-sm text-slate-300">
+                  {displayName ? `Halo, ${displayName}` : "Selamat datang kembali"}
+                </p>
+                <h1 className="text-2xl font-semibold tracking-tight text-white/95">
+                  Siap berburu makan siang?
+                </h1>
+                <p className="mt-2 text-sm text-slate-300">
+                  Kamu sudah spin {spinCount}× sejauh ini.
+                </p>
+              </>
+            )}
+
+            <Link
+              href="/spin"
+              className="mt-5 inline-flex items-center gap-2 rounded-xl bg-rose-500 px-5 py-3 text-sm font-bold text-white shadow-md shadow-rose-500/25 transition-all hover:bg-rose-600 active:scale-[0.98]"
+            >
+              <span aria-hidden="true">🎰</span> Spin sekarang
+            </Link>
+          </section>
+
+          {/* Dompet cuma relevan kalau sudah pernah dipakai atau sudah ada
+              akunnya. Menyodorkan form budget ke pengunjung baru adalah
+              gesekan sebelum nilainya terasa. */}
+          {user && !firstTime && <WalletCard />}
+
+          <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+            <h2 className="mb-1 text-base font-semibold tracking-tight text-slate-800">
+              Cara lain mencari
             </h2>
-          </div>
+            <p className="mb-4 text-xs text-slate-500">
+              Semuanya menuju hal yang sama: satu tempat buat makan.
+            </p>
 
-          {session && <WalletCard />}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <Link
+                href="/spin"
+                className="group rounded-xl border border-slate-100 bg-slate-50 p-4 transition-all hover:-translate-y-0.5 hover:border-rose-200 hover:bg-white hover:shadow-sm active:scale-[0.98]"
+              >
+                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-rose-100 text-xl text-rose-500">
+                  🎰
+                </div>
+                <h3 className="text-sm font-semibold text-slate-800">
+                  Spin dengan filter
+                </h3>
+                <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                  Atur budget, jarak, dan jam buka.
+                </p>
+              </Link>
+
+              <Link
+                href="/blind"
+                className="group rounded-xl border border-slate-100 bg-slate-50 p-4 transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white hover:shadow-sm active:scale-[0.98]"
+              >
+                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-slate-200 text-xl text-slate-700">
+                  🎲
+                </div>
+                <h3 className="text-sm font-semibold text-slate-800">
+                  Blind gacha
+                </h3>
+                <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                  Tanpa atur apa-apa. Sekali klik, terima nasib.
+                </p>
+              </Link>
+
+              <Link
+                href="/map"
+                className="group rounded-xl border border-slate-100 bg-slate-50 p-4 transition-all hover:-translate-y-0.5 hover:border-sky-200 hover:bg-white hover:shadow-sm active:scale-[0.98]"
+              >
+                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-sky-100 text-xl text-sky-500">
+                  📍
+                </div>
+                <h3 className="text-sm font-semibold text-slate-800">
+                  Lihat peta
+                </h3>
+                <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                  Kalau kamu memang mau memilih sendiri.
+                </p>
+              </Link>
+            </div>
+          </section>
 
           <Suspense fallback={<RestaurantStatsSkeleton />}>
             <RestaurantStatsCards />
           </Suspense>
-
-          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-            <h3 className="text-base font-semibold text-slate-800 mb-4 tracking-tight">Pilih Mode Gacha</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
-              <Link href="/spin" className="group relative overflow-hidden rounded-xl border border-slate-100 bg-slate-50 p-4 transition-all hover:bg-white hover:border-rose-200 hover:shadow-sm hover:-translate-y-0.5 active:scale-[0.98]">
-                <div className="w-10 h-10 rounded-lg bg-rose-100 text-rose-500 flex items-center justify-center text-xl mb-3 transition-transform group-hover:scale-110 group-hover:rotate-12">🎰</div>
-                <h4 className="text-sm font-semibold text-slate-800 group-hover:text-rose-600 transition-colors">Mode Higienis</h4>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed font-normal">Spin restoran aman sesuai budget.</p>
-              </Link>
-              <Link href="/map" className="group relative overflow-hidden rounded-xl border border-slate-100 bg-slate-50 p-4 transition-all hover:bg-white hover:border-sky-200 hover:shadow-sm hover:-translate-y-0.5 active:scale-[0.98]">
-                <div className="w-10 h-10 rounded-lg bg-sky-100 text-sky-500 flex items-center justify-center text-xl mb-3 transition-transform group-hover:scale-110 group-hover:-translate-y-1">📍</div>
-                <h4 className="text-sm font-semibold text-slate-800 group-hover:text-sky-600 transition-colors">Radar Eksplor</h4>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed font-normal">Pantau area dan status higienitas.</p>
-              </Link>
-              <Link href="/blind" className="group relative overflow-hidden rounded-xl border border-slate-100 bg-slate-50 p-4 transition-all hover:bg-slate-800 hover:border-slate-800 hover:shadow-sm hover:-translate-y-0.5 active:scale-[0.98]">
-                <div className="w-10 h-10 rounded-lg bg-slate-200 text-slate-700 flex items-center justify-center text-xl mb-3 transition-transform group-hover:scale-110 group-hover:rotate-180">🎲</div>
-                <h4 className="text-sm font-semibold text-slate-800 group-hover:text-white transition-colors">Blind Gacha</h4>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed font-normal group-hover:text-slate-300 transition-colors">Kejutan instan sekali klik.</p>
-              </Link>
-            </div>
-          </div>
         </div>
 
-        <div className="w-full md:w-[340px] lg:w-[380px] flex flex-col gap-6 shrink-0">
-          <Link href="/spin" className="group w-full bg-gradient-to-r from-rose-500 to-orange-500 text-white rounded-2xl p-5 flex items-center justify-between shadow-md shadow-rose-500/20 transition-all duration-300 hover:shadow-lg hover:shadow-rose-500/30 hover:-translate-y-0.5 active:scale-[0.98] active:translate-y-0 active:shadow-sm">
-            <div>
-              <p className="text-[10px] uppercase tracking-widest text-rose-100 font-medium mb-1">Aksi Cepat</p>
-              <p className="text-lg font-bold tracking-tight text-white/95">Spin Makan Siang</p>
+        <aside className="flex w-full shrink-0 flex-col gap-6 md:w-[340px] lg:w-[380px]">
+          {!firstTime && (
+            <Link
+              href="/riwayat"
+              className="group flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98]"
+            >
+              <div>
+                <p className="mb-1 text-[10px] font-medium uppercase tracking-widest text-slate-400">
+                  Punyamu
+                </p>
+                <p className="text-base font-bold tracking-tight text-slate-800">
+                  Riwayat &amp; simpanan
+                </p>
+              </div>
+              <span className="text-xl" aria-hidden="true">
+                🕒
+              </span>
+            </Link>
+          )}
+
+          {isAnonymous && !firstTime && (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+              <p className="text-sm font-semibold text-amber-900">
+                Riwayatmu belum aman
+              </p>
+              <p className="mt-1 text-[13px] leading-relaxed text-amber-800">
+                Kamu belum punya akun. Simpan email sekali saja, biar riwayat
+                dan favoritmu tetap ada waktu ganti HP.
+              </p>
+              <Link
+                href="/login"
+                className="mt-3 inline-block rounded-lg bg-amber-500 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-amber-600"
+              >
+                Simpan akun
+              </Link>
             </div>
-            <div className="h-11 w-11 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm transition-transform group-hover:scale-110 group-hover:rotate-12">
-              <span className="text-xl">🎰</span>
-            </div>
-          </Link>
+          )}
 
           <Suspense fallback={<HygieneReportsFeedSkeleton />}>
             <HygieneReportsFeed />
           </Suspense>
-
-          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm mb-6">
-            <h3 className="text-sm font-semibold text-slate-800 mb-4 tracking-tight">Cara Penggunaan</h3>
-            <div className="space-y-4">
-              <div className="flex gap-3 items-start">
-                <div className="w-5 h-5 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center shrink-0 text-[10px] font-bold mt-0.5">1</div>
-                <p className="text-xs font-normal text-slate-500 leading-relaxed pt-0.5">Pilih budget & radius untuk <span className="font-medium text-slate-700">spin restoran acak</span>.</p>
-              </div>
-              <div className="flex gap-3 items-start">
-                <div className="w-5 h-5 rounded-full bg-sky-50 text-sky-500 flex items-center justify-center shrink-0 text-[10px] font-bold mt-0.5">2</div>
-                <p className="text-xs font-normal text-slate-500 leading-relaxed pt-0.5">Pantau status higienitas di menu <span className="font-medium text-slate-700">Radar Map</span>.</p>
-              </div>
-              <div className="flex gap-3 items-start">
-                <div className="w-5 h-5 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center shrink-0 text-[10px] font-bold mt-0.5">3</div>
-                <p className="text-xs font-normal text-slate-500 leading-relaxed pt-0.5">Berpartisipasi kirim laporan kotor atau bersih.</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        </aside>
       </div>
     </main>
   );
