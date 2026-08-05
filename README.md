@@ -58,7 +58,8 @@ model rekomendasi nanti.
 
 Catatan lengkap ada di `supabase/`: [KEAMANAN.md](supabase/KEAMANAN.md),
 [DATA.md](supabase/DATA.md), [AUTH.md](supabase/AUTH.md),
-[LOOP.md](supabase/LOOP.md), [METRIK.md](supabase/METRIK.md).
+[LOOP.md](supabase/LOOP.md), [METRIK.md](supabase/METRIK.md),
+[ML.md](supabase/ML.md).
 
 ## Menjalankan secara lokal
 
@@ -75,6 +76,9 @@ Buat `.env.local`:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-public-key>
+
+# Opsional. Mencatat konteks cuaca lewat Open-Meteo; mati kalau tidak diisi.
+# ENABLE_WEATHER_CONTEXT=true
 ```
 
 Di Supabase SQL Editor, jalankan **berurutan**:
@@ -86,6 +90,7 @@ supabase/migrations/20260804000001_rls_hardening.sql
 supabase/migrations/20260804000002_jam_buka_dan_kualitas_data.sql
 supabase/migrations/20260804000003_spin_events_dan_favorit.sql
 supabase/migrations/20260804000004_propensity_dan_metrik.sql
+supabase/migrations/20260804000005_konteks_cuaca.sql
 ```
 
 Lalu di Dashboard:
