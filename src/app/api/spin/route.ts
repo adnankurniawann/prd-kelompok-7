@@ -9,8 +9,13 @@
  */
 
 import { getEligibleRestaurants } from "@/lib/supabase/queries";
-import { calculateSpinWeights, weightedRandom } from "@/utils/gacha";
+import { calculateSpinWeights, weightedRandom, SPIN_POLICY } from "@/utils/gacha";
 import { clientIp, rateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import { recordSpinEvent } from "@/lib/supabase/events";
+
+/** UUID apa pun versinya — session_id dibuat oleh crypto.randomUUID di klien. */
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -215,12 +220,27 @@ export async function POST(request: Request): Promise<Response> {
     // 3a. only_open — opsional. Default true: merekomendasikan tempat yang
     //     sudah tutup adalah cara tercepat kehilangan kepercayaan orang.
     // ------------------------------------------------------------------
-    const { only_open } = params;
+    const { only_open, session_id } = params;
 
     if (only_open !== undefined && typeof only_open !== "boolean") {
       return Response.json(
         {
           error: 'Parameter "only_open" must be a boolean.',
+          code: "INVALID_INPUT",
+        },
+        { status: 400 }
+      );
+    }
+
+    // session_id mengelompokkan spin dalam satu duduk. Opsional: spin tetap
+    // boleh jalan tanpa itu, cuma tidak ikut tercatat.
+    if (
+      session_id !== undefined &&
+      (typeof session_id !== "string" || !UUID_REGEX.test(session_id))
+    ) {
+      return Response.json(
+        {
+          error: 'Parameter "session_id" must be a UUID.',
           code: "INVALID_INPUT",
         },
         { status: 400 }
@@ -328,7 +348,26 @@ export async function POST(request: Request): Promise<Response> {
     const selected = weightedRandom(candidates, weights);
 
     // ------------------------------------------------------------------
-    // 8. Return success response with the 6 required fields
+    // 8. Catat penayangannya — SETIAP penayangan, bukan hanya yang diterima.
+    //
+    //    Konteksnya dibekukan di sini, saat hasilnya benar-benar diperlihatkan.
+    //    Kegagalan pencatatan tidak boleh membatalkan spin yang sudah berhasil:
+    //    yang hilang cuma satu baris data, bukan makan siang orang.
+    // ------------------------------------------------------------------
+    const eventId = session_id
+      ? await recordSpinEvent({
+          sessionId: session_id,
+          restaurantId: selected.id,
+          userLat,
+          userLng,
+          distanceMeters: selected.distance,
+          candidateCount: candidates.length,
+          policy: SPIN_POLICY,
+        })
+      : null;
+
+    // ------------------------------------------------------------------
+    // 9. Return success response with the 6 required fields
     // ------------------------------------------------------------------
     return Response.json(
       {
@@ -341,6 +380,10 @@ export async function POST(request: Request): Promise<Response> {
           hygiene_score: selected.hygiene_score,
           is_open: selected.is_open,
         },
+        // Dipakai klien untuk melaporkan respons atas penayangan INI.
+        // `null` berarti tidak tercatat — tombolnya tetap berfungsi, cuma
+        // tidak ada label reward yang tersimpan.
+        event_id: eventId,
       },
       { status: 200, headers: rateLimitHeaders(limit, RATE_LIMIT) }
     );
