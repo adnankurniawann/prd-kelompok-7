@@ -136,16 +136,105 @@ mendorong ke arah mana pun.
 dikurasi memberi 0, bukan tingkat 2. Cuaca memakai +1/−1/0 supaya "tidak tahu"
 tidak bisa tertukar dengan "tidak hujan".
 
+## Fase 2 — simulator dan baseline: **selesai**
+
+`src/lib/ml/linalg.ts`, `bandit.ts`, `simulator.ts`. Model: Thompson Sampling
+di atas regresi linear Bayesian, `A ← A + xxᵀ`, `b ← b + rx`, memilih
+`argmax θ̃ᵀxᵢ` dengan `θ̃ ~ N(θ̂, σ²A⁻¹)`.
+
+A⁻¹ disimpan langsung dan diperbarui lewat Sherman–Morrison — O(d²) per ronde
+alih-alih O(d³) kalau A dibalik ulang tiap kali.
+
+### Hasil
+
+1.500 ronde, 40 pengguna, 60 restoran, benih 20260804. Jalankan ulang dengan
+`npm test`; angkanya dicetak dari test supaya tidak pernah basi.
+
+| Kebijakan | Accept | Regret | Coverage |
+|---|---|---|---|
+| *oracle (batas atas)* | *72,1%* | *0* | — |
+| LinUCB (α=0,5) | 65,7% | **70,6** | 57% |
+| Thompson Sampling | 65,0% | 89,6 | **77%** |
+| ε-greedy (ε=0,1) | 64,7% | 111,3 | 100% |
+| Jarak terdekat | 55,9% | 266,1 | 37% |
+| Uniform random | 44,9% | 428,5 | 100% |
+
+Thompson menurunkan cumulative regret **79% dibanding acak seragam** — yaitu
+kebijakan yang sekarang benar-benar dipakai aplikasi.
+
+### Yang tidak sesuai dugaan, dan tidak disembunyikan
+
+**LinUCB mengalahkan Thompson pada regret** (70,6 vs 89,6). Thompson unggul di
+cakupan katalog (77% vs 57%), dan untuk produk ini cakupan bukan hiasan:
+sistem yang cuma merekomendasikan segelintir tempat teratas gagal sebagai
+produk walau accept rate-nya tinggi.
+
+Jadi pilihannya bukan "yang skornya paling bagus" melainkan trade-off yang
+harus disebut apa adanya. Kalau nanti hanya regret yang dikejar, LinUCB
+kandidat yang lebih baik.
+
+**Jarak terdekat menutup katalog paling sempit** (37%) — baseline non-ML yang
+lumayan kuat pada accept rate, tapi menampilkan tempat yang itu-itu saja.
+
+### Ablasi
+
+Ablasi membutakan **kebijakannya saja**; hadiah tetap dihitung dari fitur
+penuh. Kalau lingkungannya ikut dibutakan, oracle-nya ikut bergeser dan angka
+regret dari dua ablasi tidak lagi sebanding — pada percobaan pertama, membuang
+satu blok bahkan terlihat *menguntungkan*, yang jelas tidak masuk akal.
+
+`ablateBlock(x, "jarak")` dan seterusnya.
+
+### Keputusan yang menentukan seluruh hasilnya
+
+**`θ*_u = θ_bersama + deviasi kecil`, bukan θ* acak bebas per pengguna.**
+
+Model ini belajar SATU θ yang dibagi ke semua pengguna, dan konteksnya cuma
+punya dua dimensi afinitas pengguna. Kalau tiap pengguna diberi θ* yang
+sepenuhnya bebas, tidak ada θ tunggal yang bisa mewakili mereka — dan pada
+percobaan pertama memang begitu: Thompson kalah dari "ambil yang terdekat".
+Yang terukur di situ bukan mutu modelnya, melainkan ketidakcocokan antara
+model dan lingkungan karangan kita sendiri.
+
+**σ = 0,3, bukan 1.** Dengan 26 dimensi dan hadiah biner, posterior yang lebar
+membuat θ̃ melompat terlalu jauh tiap ronde dan Thompson berubah jadi
+hampir-acak — kalah bahkan dari ε-greedy. Ini parameter pertama yang harus
+dicurigai kalau hasilnya mengecewakan.
+
+**Sepertiga katalog sintetis sengaja tanpa kategori berarti,** meniru data seed
+di mana "Restaurant" polos adalah nilai paling umum. Simulasi dengan katalog
+yang lebih rapi dari kenyataan akan melebih-lebihkan manfaat modelnya.
+
+### Batasan — baca sebelum mengutip angka mana pun
+
+Hasil simulasi **bukan bukti sistem bekerja pada manusia.**
+
+- Pengguna sintetis di sini **linear dan stasioner**. Preferensinya tidak
+  berubah, tidak bosan, dan tidak dipengaruhi teman di grup chat
+- `P(accept) = sigmoid(θ*ᵀx)` mengasumsikan hadiahnya benar-benar fungsi dari
+  fitur yang kita punya. Kalau yang menentukan sebenarnya sesuatu di luar
+  vektor — warungnya sedang ramai, temannya mengajak ke tempat lain — model
+  tidak akan pernah menemukannya, dan simulasi ini tidak akan menunjukkannya
+- Batas atas oracle bergeser ~3 poin persen antar kebijakan, karena fitur
+  popularitas bergantung pada apa yang pernah ditayangkan. Kecil, tapi bukan nol
+
+Angka di atas hanya bukti bahwa modelnya belajar **kalau dunianya seperti yang
+diasumsikan**. Buktinya pada manusia baru datang di Fase 4.
+
 ## Berikutnya
 
-**Fase 2 — simulator dan baseline.** Ini inti ML-nya, dan bisa dikerjakan
-tanpa menunggu data nyata. Baseline yang wajib ada: uniform random, jarak
-terdekat, ε-greedy, LinUCB, Thompson Sampling, dan oracle untuk menghitung
-regret.
+**Fase 3 — serving tanpa layanan Python.** Model linear berarti inferensi cuma
+satu perkalian matriks-vektor 26×26: tidak butuh Python, tidak butuh layanan
+terpisah, tidak butuh cold start serverless kedua. Latihan offline
+menghasilkan JSON berisi `θ̂` dan Cholesky dari `σ²A⁻¹`; route handler
+memuatnya, menarik `θ̃ = θ̂ + Lz`, lalu memilih argmax.
 
-Ablasi memakai `ablateBlock(x, "masakan")` dan seterusnya — dinolkan, bukan
-dibuang, supaya panjang vektornya tetap dan hasilnya bisa dibandingkan langsung
-dengan model penuh.
+Seluruh aljabar yang dibutuhkan sudah ada di `linalg.ts` dan sudah teruji.
+
+**Shadow mode dulu.** Sebelum bandit benar-benar memilih: jalankan diam-diam,
+catat apa yang *akan* ia pilih, tapi tetap tampilkan hasil kebijakan sekarang.
+Setelah beberapa ratus baris, jalankan evaluasi replay. Kalau estimasinya tidak
+lebih baik dari yang sekarang, jangan deploy.
 
 **Jangan mulai Fase 4 (replay/A-B) sebelum ada ~500 spin.** Sebelum itu tidak
 ada yang bisa dipelajari, dan angka apa pun yang keluar akan punya interval
