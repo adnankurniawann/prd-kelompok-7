@@ -1,23 +1,49 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import {
+  ensureSession,
+  isAnonymous,
+  linkEmailToSession,
+} from "@/lib/supabase/session";
 
-export function AuthPanel({
-  variant,
-  className,
-}: {
-  variant?: string;
-  className?: string;
-}) {
+/**
+ * Panel email untuk masuk, atau untuk menyimpan sesi anonim jadi akun.
+ *
+ * Perbedaannya penting. Kalau sesi yang berjalan anonim, emailnya DIKAITKAN ke
+ * user yang sudah ada lewat `updateUser`, bukan membuat user baru — dengan
+ * begitu `user_id`-nya tidak berubah dan riwayat spin yang sudah terkumpul
+ * ikut terbawa. Memakai `signInWithOtp` di situ akan membuang riwayat itu
+ * diam-diam, dan itu persis data yang nanti melatih model rekomendasi.
+ */
+export function AuthPanel({ className }: { className?: string }) {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [anonymous, setAnonymous] = useState(false);
   const [message, setMessage] = useState<{
     text: string;
     isError: boolean;
   } | null>(null);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  useEffect(() => {
+    let cancelled = false;
+
+    void ensureSession().then((session) => {
+      if (!cancelled) setAnonymous(isAnonymous(session));
+    });
+
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAnonymous(isAnonymous(session));
+    });
+
+    return () => {
+      cancelled = true;
+      data.subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
       setMessage({ text: "Masukkan email dulu.", isError: true });
@@ -27,23 +53,32 @@ export function AuthPanel({
     setLoading(true);
     setMessage(null);
 
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
+    const redirectTo = `${window.location.origin}/auth/callback`;
 
-      if (error) {
-        setMessage({ text: error.message, isError: true });
+    try {
+      let errorMessage: string | null;
+
+      if (anonymous) {
+        errorMessage = (await linkEmailToSession(email, redirectTo)).error;
+      } else {
+        const { error } = await supabase.auth.signInWithOtp({
+          email,
+          options: { emailRedirectTo: redirectTo },
+        });
+        errorMessage = error?.message ?? null;
+      }
+
+      if (errorMessage) {
+        setMessage({ text: errorMessage, isError: true });
       } else {
         setMessage({
-          text: "Link ajaib telah dikirim ke email kamu!",
+          text: anonymous
+            ? "Cek emailmu. Buka linknya, dan riwayat spin kamu ikut kesimpan."
+            : "Link ajaib telah dikirim ke email kamu!",
           isError: false,
         });
       }
-    } catch (err) {
+    } catch {
       setMessage({ text: "Terjadi kesalahan. Coba lagi.", isError: true });
     } finally {
       setLoading(false);
@@ -52,7 +87,14 @@ export function AuthPanel({
 
   return (
     <div className={`w-full ${className}`}>
-      <form onSubmit={handleLogin} className="flex flex-col gap-4">
+      {anonymous && (
+        <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] leading-relaxed text-amber-800">
+          Kamu udah bisa spin tanpa akun. Simpan email cuma kalau mau riwayat
+          dan favoritmu tetap ada waktu ganti HP.
+        </p>
+      )}
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         {/* Label EMAIL yang dirapikan */}
         <label className="flex flex-col gap-1.5">
           <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
@@ -68,13 +110,12 @@ export function AuthPanel({
           />
         </label>
 
-        {/* Tombol yang diubah menjadi 'Kirim Link' */}
         <button
           type="submit"
           disabled={loading}
           className="w-full rounded-xl bg-rose-500 px-4 py-3 text-sm font-bold text-white shadow-sm shadow-rose-500/30 transition-all hover:bg-rose-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 mt-2"
         >
-          {loading ? "Mengirim..." : "Kirim Link"}
+          {loading ? "Mengirim..." : anonymous ? "Simpan Akun" : "Kirim Link"}
         </button>
       </form>
 

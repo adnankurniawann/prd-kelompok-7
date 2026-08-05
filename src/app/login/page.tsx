@@ -47,10 +47,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
         {/* Area Komponen AuthPanel */}
         <div>
-          <AuthPanel
-            variant="full"
-            className="border-0 bg-transparent p-0 shadow-none"
-          />
+          <AuthPanel className="border-0 bg-transparent p-0 shadow-none" />
         </div>
 
         {/* Back to Home (Tanpa Logo Panah) */}
